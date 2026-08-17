@@ -66,8 +66,12 @@ Flag any component whose declared properties are missing. An async channel with 
 For each component: *which constraint's removal would delete this?*
 
 - **Answers with a client constraint** → keep, record the citation.
+- **Answers with a supply constraint** → keep, record it as supply. A cost ceiling, a contract already held, a licence, a resource the organisation is unwilling to commit indefinitely — these are constraints, not excuses, and a mechanism they produce is cited.
 - **Answers with an earlier design decision** → self-derived. Legitimate, but it must name its parent decision, and the chain gets recorded — see below.
-- **No answer** → uncited mechanism.
+- **The artifact does not say, and you cannot trace it** → **unrecorded**. Not the same as uncited. Record it as unrecorded, name who could answer, and stop. Do not supply the answer yourself.
+- **No answer exists** → uncited mechanism.
+
+**A mechanism may have two citations, and the second is usually the unwritten one.** Ask of every cited mechanism: *what else is now relying on this?* A time-to-live that bounds a resource commitment is also bounding the exposure window of a leaked credential; a queue that smooths load is also the retry buffer. Record both. A mechanism cited by supply and silently load-bearing for a promise nobody wrote down is one well-meaning optimisation away from breaking that promise, and the optimiser will have read only the first citation.
 
 **Decide the posture before you run the test.** It changes what an uncited mechanism means, never whether you report it.
 
@@ -81,14 +85,19 @@ Oversizing is the point of a teaching artifact, so *"delete this"* is the wrong 
 
 **Record the chain; do not rule on it.** When the answer is an earlier design decision, follow it — which decision produced *that* one, and so on, until you reach a client constraint or run out. A chain is only as cited as its weakest link, and a link that fails at depth 3 is invisible while each component is checked alone.
 
-| Root | Depth | Weakest link | Root is a client constraint? |
-|---|---|---|---|
-| "High availability" — no figure, no client named | 5 | The root itself | No |
-| A 100 ms latency budget | 4 | Link 3 — *"the index grows too large for one server"*, never computed | Yes |
+| Root | Depth | Weakest link | Root | Root stated where |
+|---|---|---|---|---|
+| "High availability" — no figure, no client named | 5 | The root itself | demand — ungrounded | §2, adjective only |
+| A 100 ms latency budget | 4 | Link 3 — *"the index grows too large for one server"*, never computed | demand | §1 client table |
+| Clipping is paid work, so the licence to it is time-bounded | 2 | none — each link derives from the one above | supply | nowhere — **unrecorded**, confirmed by the owner in review |
 
-The second is the instructive shape: two properly derived links, then an unquantified premise, and everything after it inherits the gap.
+The second is the instructive shape: two properly derived links, then an unquantified premise, and everything after it inherits the gap. The third is the shape this table used to get wrong: a correctly rooted chain whose root the artifact never wrote down.
 
-Record root, depth, weakest link, and whether the root is a client constraint. **Whether a given chain is acceptable is the human's call, not this skill's** — do not write a rule for when a self-derived chain is allowed.
+**The Root column takes one of four values: `demand` · `supply` · `self-derived` · `unrecorded`.** A yes/no column here is a trap — it has no cell for the state a reviewer is most often in, so the cell gets filled with a guess.
+
+**Never resolve an unrecorded root by inference, and know which way you would guess.** Design documents are demand-shaped by habit, so an inferred root drifts toward demand: the reviewer invents a client who wanted this, and the finding lands against a mechanism that was in fact answering a cost ceiling or a contract. Getting it backwards is not a labelling error — it inverts the disposition, because a demand-rooted mechanism with no matching requirement is *delete or surface the requirement*, while a supply-rooted one is *keep, and record the second citation*. When the root is unrecorded, write `unrecorded`, name the owner who can settle it, and let the table carry the question into the review.
+
+Record root, depth, weakest link, root kind and where the root is stated. **Whether a given chain is acceptable is the human's call, not this skill's** — do not write a rule for when a self-derived chain is allowed.
 
 ### 4 · Divide — is the citation proportional?
 
@@ -129,6 +138,8 @@ The first three say where a figure came from; the last two say whether anything 
 Every **assumed** figure becomes a risk-register entry with the decision it supports. This is the single most useful thing this skill produces, because assumed figures are load-bearing far more often than anyone admits.
 
 **Unconsumed is the label most reviews miss**, because a labelled figure looks like diligence. A scale figure elicited in the first five minutes and then divided by nothing is a question that should not have been asked, and the design is resting on whatever was reached for instead.
+
+**The same labels apply to the non-numeric inputs.** A root, a requirement and a tolerance each came from somewhere, and *"the reviewer inferred it"* is a provenance, not a fact. Mark an inferred requirement **assumed** in the row that rests on it, not only in the Scope paragraph — a hedge in Scope does not travel with the finding, and a finding that reads as a result will be actioned as one.
 
 **Never invent a number to fill a gap.** A missing figure is a finding and now has a row. If arithmetic requires an input that does not exist, state the input, mark it **missing**, show the sensitivity, and continue — a retention promise of *forever* with no message rate behind it spans two orders of magnitude across plausible rates, and that span is the finding.
 
@@ -199,7 +210,7 @@ and which findings would change if a figure contradicted the prose.
 | Component | Type | Deletion test | Ratio | Disposition |
 
 ## Chains
-| Root | Depth | Weakest link | Root is a client constraint? |
+| Root | Depth | Weakest link | Root (demand / supply / self-derived / unrecorded) | Root stated where |
 
 ## Unmapped requirements
 | Requirement | Stated where | No mechanism found for |
@@ -233,6 +244,8 @@ Close with **the three most expensive findings**, in one sentence each.
 - Where the artifact is thin, the finding is the thinness — not an excuse to fill it in from a reference architecture.
 - **Adjudicate the chain's root; leave its worth to the human.** Two different questions. *Does the chain reach a client constraint?* is mechanical — follow it and report the root, the depth, and the link at which it stops tracing. *Is this mechanism worth its cost?* is not yours. Report the finding **at the break, once**: a five-deep chain standing on an ungrounded adjective is one finding against the adjective, not five against the mechanisms, and each link may be perfectly derived from the one above it.
 - **Do not report a ratio you have not divided.** "Oversized" without the division is taste, and taste arguments get settled by seniority.
+- **Never assert an inference as a result.** Every finding that rests on something you supplied — a root, a requirement, a posture, a tolerance — says so inside the finding. This is the skill's whole safety mechanism: an inference marked as an inference is overturned by the reader in one line, and an inference presented as a finding is actioned.
+- **Do not interview the human to close a gap.** An unstated requirement is the finding; asked and answered in conversation, it never reaches the artifact, and the corpus mode (twelve designs, recurrence columns) stops working. The exception is narrow and testable: **ask only when the classification changes the disposition, not the label** — demand-versus-supply on an unrecorded root qualifies, because the two produce opposite recommendations. Everything else goes in the table.
 
 ## References
 
