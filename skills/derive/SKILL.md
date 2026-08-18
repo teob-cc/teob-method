@@ -97,6 +97,8 @@ The full pass is an afternoon, and it earns that when there are several client c
 
 Other stop rules: one node suffices (stop sizing) · shallow trust boundary (stop at authn) · no contended resource (no reservation, no strict store).
 
+**The delivery stop rules, which are the ones most often skipped past:** one repository until a caller exists that your commit cannot reach · one artifact per runnable unit, and the unit count was settled at 04 · no version scheme until someone can decline an upgrade · no build system beyond the ecosystem default until a *measured* build time crosses a tolerance stated first · no environment beyond production until you can say what it verifies that production cannot · no pipeline stage that cannot fail the build.
+
 Taking a stop rule is the method working. Running all ten steps on a trivial system is the method being performed.
 
 ## Granularity is a range, not two nouns
@@ -108,6 +110,8 @@ Taking a stop rule is the method working. Running all ten steps on a trivial sys
 - **Repo topology** — one repo or many
 
 Each split must cite a force: independent deployment, fault isolation, a genuinely different scaling axis, or an existing team boundary that is not going away.
+
+**Repo topology has its own force, and it is not team count.** It is whether a caller can be reached by your commit — the line between a *public* interface and a *published* one. Two teams who can still land one commit together have not bought a second repository; one customer-held SDK has. That answer was recorded at step 01 and it also decides the version scheme, the compatibility mode and the deprecation window.
 
 **The first split is a phase change, not a refactor.** Inside one process there are no channels. The moment you split, an edge acquires a guarantee, an ordering key, a failure mode, a retry policy, a schema and an owner — all of which were free a moment ago. Buy it deliberately. *"It'll scale better"* is not a force.
 

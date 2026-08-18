@@ -177,8 +177,24 @@ Most reviews stop at the runtime picture. Carry it further — each is derived f
 
 - **Observability** — is detection proportioned to consequence, or to what was easy to emit? Zero-tolerance promises have their own step above; here, check that what *is* watched traces to a promise made to a client.
 - **Operations** — can this organisation actually staff, host and afford this shape?
-- **Delivery** — does each boundary buy something (independent deployment, fault isolation, a genuinely different scaling axis, an existing team boundary)? "It'll scale better" is not a force.
+- **Delivery** — does each boundary buy something (independent deployment, fault isolation, a genuinely different scaling axis, an existing team boundary)? "It'll scale better" is not a force. And run the citation check below: delivery machinery is the one area where **every decision is made by default if nobody makes it**, so almost none of it has ever been challenged.
 - **Codebase lifecycle** — spike, one-off, prototype-becoming-platform, or platform? Does the repo topology match?
+
+**The delivery citations.** Each of these is a mechanism with a recurring cost. Ask what deletes it, and apply the same four answers as anywhere else — with two warnings specific to this area. **Delivery is where an artifact is least likely to have written down why**, so *unrecorded* will be the honest answer far more often than *uncited*: name the owner who could settle it and leave the cell. And several of these are **supply**-rooted rather than demand-rooted — a build cache bought by a cost ceiling, an environment bought by a procurement rule, a repo split bought by a contract with an external consumer. Calling one of those uncited inverts the recommendation, because supply-rooted means *keep, and record the second citation*.
+
+| Mechanism | Cites | If nothing cites it |
+|---|---|---|
+| A second repository | A caller your commit cannot reach — a *published* interface, not merely a public one | Coordinated pull requests bought for nothing. Splitting a repo does not split a runtime |
+| A version scheme | A consumer who chooses when to upgrade. SemVer requires a declared public API; CalVer fits upgrades driven by time, not compatibility | The major number never moves, because nobody could refuse. Identity was enough |
+| A build system beyond the ecosystem default | A repo where the correct incremental set cannot be computed from the directory layout. **Ask for the ratio**: measured build time vs a stated tolerance | A second build language and a cache to operate, to save a minute |
+| A remote build cache | Build minutes against the cost envelope. It is **a derived store with an invalidation contract** — a non-hermetic build breaks it | A green build of the wrong bytes, undetected |
+| An extra environment | What it verifies that production cannot | A full copy of cost, config drift, data and access surface, unbudgeted |
+| GitOps reconciliation | A drift you must detect. Decompose it: desired-state store (truth) · pull channel (six properties, ordering key included) · reconciler processor · running system as projection | A projection with no staleness bound. Ask for commit-to-live |
+| A canary rollout | A graded abort signal that exists | A slow deploy at the same price |
+| Blue-green | Rollback that must be instant | A second production footprint, and state migration twice |
+| A feature flag | Its category and its lifespan. *Release* toggles must be removed; *ops* toggles are the degradation ladder's actuators and are long-lived | Flag debt, and a ladder whose rungs nobody can actually step onto |
+
+**Where a design calls itself twelve-factor**, that is not a compliance claim to accept — it is **a hosting posture already chosen**, and step 01 is where the choice belonged. Two factors need checking against this method rather than agreed with: *backing services as attached resources* treats a store as a swappable URL, when the store was supposed to be chosen by access pattern, invariant and failure mode; and *config in the environment* is right for secrets and wiring and wrong for the quasi-static class, which needs history, diff and a reviewer. The rest are compatible; *build/release/run*, *explicit dependencies*, *disposability* and *dev/prod parity* are worth confirming rather than questioning.
 
 ## When the artifact declares its own process
 
@@ -219,13 +235,16 @@ and which findings would change if a figure contradicted the prose.
 | Promise | Carrying mechanism | Failure mode | Counter that proves it |
 
 ## Supply
-| Hosting posture | Contracts held | Team capability | Cost envelope | Lifecycle |
+| Hosting posture | Contracts held | Team capability | Cost envelope | Lifecycle | Consumers you cannot rebuild for |
 
 ## Provenance
 | Figure | Value | Label | Supports | Risk if wrong |
 
 ## Arithmetic
 | Claim in the document | Independent derivation | Right quantity? | Agrees? |
+
+## Delivery
+| Mechanism present | Cites | Verdict |
 
 ## Adjacent areas
 | Area | Derived, or assumed? | Finding |

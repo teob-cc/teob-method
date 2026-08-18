@@ -18,7 +18,7 @@ Each step states what it asks and what it produces. The written artifact is what
 
 Every tolerance names the conditions it holds under. "p99 200 ms" and "p99 200 ms during the nightly partner window" are different requirements, and only the second is testable.
 
-**Supply.** Team capability and size · hosting posture (cloud, on-prem, hybrid, regulated enclave) · contracts already held (CDN, archive tier, managed services) · cost envelope · expected lifecycle (spike · one-off product · prototype becoming platform · platform).
+**Supply.** Team capability and size · hosting posture (cloud, on-prem, hybrid, regulated enclave) · contracts already held (CDN, archive tier, managed services) · cost envelope · expected lifecycle (spike · one-off product · prototype becoming platform · platform) · **consumers you cannot rebuild for** — who holds a client library, SDK, schema, image or public API version of this system that you cannot change and redeploy on their behalf. Name them. That one answer buys or refuses most of the delivery machinery at 04 and 09; where it is *nobody*, a second repository, a declinable version, a compatibility mode and a deprecation window are all uncited.
 
 **Deliverable** A client-class table carrying tolerances, the view list with a freshness bound each, and the accepted degraded outcomes — plus an operating-envelope table. These are the **joint-signature artifacts**: everything the business half of the organisation can read, check and correct lives here, and nothing client-visible is decided after this step.
 
@@ -50,6 +50,8 @@ Take the step-01 view list and its bounds — they are promises and are not revi
 Match store family to access pattern. Declare all six channel properties per edge. Then granularity: runtime units, module seams, repo topology — each split citing a force.
 
 **Deliverable** The labelled graph: every node typed, every edge annotated.
+
+**Repo topology is a third axis, independent of runtime units and module seams.** It is not a scale or team-count question: it is whether a caller can be reached by your commit. One repository until a caller exists that cannot — that is the *published interface* line, and it was answered at 01. Two teams who can still land one commit together have not bought a second repository; one customer-held SDK has. A build system beyond the ecosystem default cites a repository whose correct incremental set can no longer be computed from the directory layout — record the ratio, measured build time against a tolerance stated first. A remote build cache is **a derived store with an invalidation contract**: a non-hermetic build breaks the contract, and a broken one serves confident wrong answers with green dashboards.
 
 **Record the ratio beside the citation.** Per choice: what the citing requirement demands against what the mechanism supplies. Near 1 is sized to the job; tens are headroom and must name the factor — growth, peak, failover; hundreds mean the requirement cannot discriminate the choice, and the choice came from somewhere other than this derivation.
 
@@ -85,7 +87,9 @@ Per processor: stateless / stateful / batch · inputs and outputs · merge seman
 
 Instances, regions, placement, data residency, and the **second arithmetic pass**: capacity, given the stores chosen at 04.
 
-**Deliverable** Capacity arithmetic with headroom stated.
+**The artifact is decided here, one per runnable unit** — immutable, identified by content or commit, built once and promoted rather than rebuilt per environment. Delivery does not get to invent a runnable unit; if the pipeline emits a deployable the design never named, one of the two is wrong. **Each environment must name what it verifies that production cannot.** Environments are the most reliably uncited mechanism in a system: each is a full copy of the cost, the config drift, the data problem and the access-control surface.
+
+**Deliverable** Capacity arithmetic with headroom stated · the artifact and how it is identified · the environment list with a justification each.
 
 ---
 
@@ -96,7 +100,18 @@ Instances, regions, placement, data residency, and the **second arithmetic pass*
 
 Detection proportioned to consequence — how badly a client is hurt, and where on the ladder that lands. Outcome KPIs in business terms (successful vs abandoned checkouts, not CPU). **Zero-tolerance counts**: promises with no acceptable rate, tracked as counts that must be zero. Release and delivery shape sized by lifecycle. Cost envelope carried from step 01.
 
-**Deliverable** The operations table: what is watched, at what threshold, who is woken, and what it costs.
+**Change is derived here too, and each mechanism cites something:**
+
+- **Version scheme** ← who can decline an upgrade. Semantic versioning requires a declared public API, because the major number is a promise about that boundary. Calendar versioning answers *how old is this*, and fits upgrades driven by support windows, security horizons or regulatory dates. Where the consumer cannot decline, the version is **identity, not promise** — a content hash or commit id.
+- **Rollout strategy** ← what must be observed before committing. **Canary** when a graded signal exists and is worth waiting for; its whole value is the abort metric, so a canary without one is a slow deploy at the same price. **Blue-green** when rollback must be *instant*, at the price of a second footprint and state migration solved twice. Rolling replace is the default and cites neither. Name the force, then the strategy.
+- **Evolution** ← the change that must land without an outage. **Parallel change** (expand · migrate · contract) for an incompatible interface — *migrate* is the skipped phase, so give it an owner and a date. **Branch by abstraction** inside one runnable unit. **Strangler fig** for replacing a system that already exists.
+- **Flags have four lifespans, and conflating them is why flag debt accrues.** *Release* toggles are transient and **their removal is part of the mechanism**. *Experiment* toggles live as long as the experiment. *Permissioning* toggles are an authorisation rule wearing a flag's clothes — enforce them at a surface. **Ops toggles are the degradation ladder's actuators**, and are long-lived by design: a rung nobody can step onto during an incident was a document, not a mechanism.
+- **Desired state and drift** ← a drift you must detect. Decompose before adopting: the desired-state repo is a **store, and it is truth** (quasi-static class, needs its own restore path, not rebuildable by replay); the agent's pull is a **channel** owing all six properties, ordering key included; the running system is a **projection** owing a stated staleness bound, commit-to-live, alarmed at half. **Drift is a zero-tolerance count, not a dashboard.** Where nothing but the pipeline can write, there is no drift and the reconciler is uncited.
+- **Delivery metrics** — the published set is currently **five**: change lead time · deployment frequency (throughput); change fail rate · deployment rework rate (stability); failed deployment recovery time. Read against a stated tolerance, not an industry percentile.
+
+Configuration is a deploy with no build step and usually no review — versioned, diffable, revertible, alarmed on divergence. **Environment variables are the wrong home for the quasi-static class**: no history, no diff, no reviewer.
+
+**Deliverable** The operations table: what is watched, at what threshold, who is woken, and what it costs · a release procedure naming its rollout strategy, abort metric and last rehearsal · a version scheme naming the consumer it promises to · a flag register with a category and lifespan per entry.
 
 ### 10 · Trace
 **Asks** Does every mechanism cite a requirement, and every requirement map to a mechanism?
@@ -104,6 +119,8 @@ Detection proportioned to consequence — how badly a client is hurt, and where 
 **Deliverable** The traceability map. Unmapped requirement → a gap; design for it. Unconsumed figure → a number collected at 01 that nothing here consumes; drop it, or name the decision it should have informed.
 
 **A mechanism citing no client constraint takes the first disposition that applies — a search, not a menu.** ① **Delete** — nothing sits above it. ② **Surface a missing requirement** — tracing it lands on a client constraint that was always true and never written down; the common case, and often a *different* constraint from the one that bought the parent. ③ **Declare self-derived, naming the parent decision** — and the parent now faces the same test. Naming a parent moves the obligation up, it does not discharge it. Citations chain; the recursion ends at a client constraint or the finding sits at the root, and **a five-deep chain on an ungrounded adjective is one finding, not five.** Record the chain's root, depth and the link at which it stops tracing.
+
+**The cutover, where something already exists.** In a running system an uncited mechanism is Chesterton's fence rather than a razor: report it as *no recorded reason — confirm before removing*, and produce an incremental path rather than a deletion. Named shapes: **strangler fig** across codebases, **branch by abstraction** inside one. Both keep the system releasable throughout, which is what makes them usable.
 
 **Re-run trigger.** A zero-tolerance count that keeps firing is not an ops problem — it is a signal to re-run the derivation from step 03, because the source of truth was modelled wrong.
 

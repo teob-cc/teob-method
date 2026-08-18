@@ -62,3 +62,50 @@ Rank findings by cost, not by how easy they were to spot:
 
 - **The impressive figure for the deciding figure.** Before accepting any arithmetic, list the promises and ask which figure each one waits on. A design that computes its largest quantity and not its binding one has done arithmetic, not sizing.
 - **The mechanism-health metric for the promise counter.** If the promise were violated right now, would this number move? If not, the promise is uncounted however many dashboards exist.
+
+## Delivery — the questions nobody is asked
+
+Delivery is the one adjacent area whose decisions all get made by default, so the review is the first time any of them is proposed. Run the same test as on any component.
+
+**Repo topology**
+- Is there a caller this team's commit cannot reach? Name it. If none, every repository past the first is uncited.
+- Which way may dependencies point, and is it enforced? An upstream importing from a downstream is the same defect whatever the layout.
+- Was the repo split derived from the org chart? Team boundaries buy runtime units; they buy a repository only when two teams cannot land one commit together.
+
+**Versioning**
+- Who can decline an upgrade? If nobody, the version is identity and the scheme is decoration.
+- SemVer without a declared public API is a promise about an undefined boundary.
+- Is the upgrade driven by time (support window, security horizon, regulatory date) rather than compatibility? Then the scheme is answering the wrong question.
+
+**Build**
+- What is the measured build time, and against what stated tolerance? Demand the ratio.
+- Is the build hermetic? A cache in front of a non-hermetic build has a broken invalidation contract and can serve wrong bytes with a green result.
+- What does the cache cost, and does it grow with commits rather than with traffic?
+
+**Environments**
+- For each: what does it verify that production cannot?
+- What does parity cost, and is that number anywhere in the design?
+
+**Release**
+- Which strategy, and which force bought it — a graded abort signal (canary) or instant rollback (blue-green)?
+- Does the abort metric exist and is it wired? A canary without one is a slow deploy.
+- Is there fast startup and graceful shutdown? Graceful shutdown is a channel property: in-flight requests and unacked messages.
+- What is the ordering constraint between a schema migration and the deploy that depends on it?
+- When was the rollback last rehearsed? A date, or it is an assumption.
+
+**Reconciliation / GitOps**
+- Is there drift to detect at all? If nothing but the pipeline can write, the reconciler is uncited.
+- Desired-state store: is it treated as truth, with its own restore path?
+- Pull channel: guarantee, ordering key, backpressure, schema, owner.
+- Commit-to-live staleness bound: stated, or only observed afterwards?
+- Is drift a zero-tolerance count or a dashboard?
+
+**Flags**
+- Does each flag carry a category and an expected lifespan?
+- Are release toggles being removed, and is the removal owned?
+- Do the degradation ladder's rungs each have an actuator, or are they promises with no switch?
+
+**Twelve-factor claims**
+- Treat it as a declared hosting posture, and ask whether step 01 chose it.
+- *Backing services as attached resources* contradicts choosing a store by access pattern, invariant and failure mode.
+- *Config in the environment* is wrong for the quasi-static class, which needs history, diff and a reviewer.
