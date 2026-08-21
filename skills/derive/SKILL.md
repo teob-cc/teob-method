@@ -50,7 +50,7 @@ Detailed procedure per step: `references/ten-steps.md`. Load it when you begin s
 
 ### Phase IV · Carry
 - **09 · Operations** — observability proportioned to consequence, outcome KPIs, zero-tolerance counts, delivery and release shape, cost.
-- **10 · Trace** — the traceability map, checked in both directions. Re-run trigger.
+- **10 · Trace** — the traceability map, read three ways: cited, mapped, and counted. Re-run trigger.
 
 ## The two arithmetic passes
 
@@ -122,7 +122,7 @@ Produce the artifacts in order, each small enough to fit on a screen. Close with
 | Requirement (testable) | Mechanism | Verified by |
 |---|---|---|
 
-Then check it both ways: uncited mechanism → delete it or declare it self-derived with its parent decision; unmapped requirement → design for it.
+Then check it three ways: uncited mechanism → delete it or declare it self-derived with its parent decision; unmapped requirement → design for it; **the same mechanism named by more than one requirement → a coupling finding**, recorded rather than fixed, carried onto the ladder as one entry per promise, and used to rank the risk register.
 
 ## Rules
 

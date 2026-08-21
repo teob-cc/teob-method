@@ -121,7 +121,7 @@ If the division cannot be done because the mechanism's capacity is nowhere state
 
 Every requirement must be **testable** — a number, a bound, or a condition. "Highly available" is not a requirement; "99.9% of writes acknowledged within 200 ms during the nightly partner window" is. Every tolerance names the conditions it holds under.
 
-Read the map in both directions. Then read it a third way: **a mechanism serving three requirements is a coupling finding** — when it breaks, three promises break at once.
+Read the map in both directions. Then read it a third way: **a mechanism serving three requirements is a coupling finding** — when it breaks, three promises break at once. Report the count beside each mechanism and rank findings by it, since the highest count is the largest blast radius on the page. Do **not** recommend splitting to reduce a count: a mechanism derived from a coupling number rather than a client constraint is uncited, and the first rule deletes it. What the count obliges is a ladder entry per promise, a check that the promises sharing it have the same signatories, and its place at the top of the register.
 
 ### 6 · Label every figure's provenance
 
