@@ -20,7 +20,9 @@ Every tolerance names the conditions it holds under. "p99 200 ms" and "p99 200 m
 
 **Supply.** Team capability and size · hosting posture (cloud, on-prem, hybrid, regulated enclave) · contracts already held (CDN, archive tier, managed services) · cost envelope · expected lifecycle (spike · one-off product · prototype becoming platform · platform) · **consumers you cannot rebuild for** — who holds a client library, SDK, schema, image or public API version of this system that you cannot change and redeploy on their behalf. Name them. That one answer buys or refuses most of the delivery machinery at 04 and 09; where it is *nobody*, a second repository, a declinable version, a compatibility mode and a deprecation window are all uncited.
 
-**Deliverable** A client-class table carrying tolerances, the view list with a freshness bound each, and the accepted degraded outcomes — plus an operating-envelope table. These are the **joint-signature artifacts**: everything the business half of the organisation can read, check and correct lives here, and nothing client-visible is decided after this step.
+**Stress the elicited list before leaving.** Take the nouns just written — each class, view, tolerance — and ask, no probability and the ridiculous allowed, *what hits this?* A discovered rung joins the ladder under the same signing rules; a mechanism worth designing but not building is a **recorded option** — designed, primed, unbuilt, trigger stated. Full pass at 07.
+
+**Deliverable** A client-class table carrying tolerances, the view list with a freshness bound each, and the accepted degraded outcomes — plus an operating-envelope table, and any recorded options with their triggers. These are the **joint-signature artifacts**: everything the business half of the organisation can read, check and correct lives here, and nothing client-visible is decided after this step.
 
 **Exit condition — no figure leaves this step unconsumed.** Beside each volume, name the later step that will divide, bound or decide with it. A figure with no named consumer is a question that should not have been asked: drop it, or find the decision it was standing in for. Checked again at 02, reported at 10.
 
@@ -82,6 +84,8 @@ Per processor: stateless / stateful / batch · inputs and outputs · merge seman
 
 **Deliverable** A reachability proof per promised rung, and the per-edge failure spec. The ladder is carried forward, not authored here.
 
+**The stress pass** (from residuality theory — O'Reilly 2024, decomposed). After the ladder is priced: generate stressors by abusing the design's own nouns — every class, data class, schema, component — plus the business context. Rules: **no probability** · **everything goes in the list, however ridiculous** · **no generic stressor lists**. Then the incidence matrix (stressors × components, 1/0) read mechanically: high row = dangerous attractor · high column = a component absorbing capability classes it was never given · **two 1s in one row = hyperliminal coupling**, the co-failure the coupling count cannot see (the count reads the map at rest; the matrix reads it in motion) · a column whose rows are a subset of another's can live inside it · a zero column is under-stressed, not safe. **Three legal outputs per stressor**: a stated requirement (signed like any elicited one) · a finding · a recorded option. A stressor is a probe, never a requirement — it enters no table and carries no number. **Guard**: a matrix total is a measurement, not a target; a mechanism justified only by a stressor row is furniture with a scary story. Fires again at 10.
+
 ### 08 · Runtime & placement
 **Asks** How many of what, where?
 
@@ -120,11 +124,13 @@ Configuration is a deploy with no build step and usually no review — versioned
 
 **A mechanism citing no client constraint takes the first disposition that applies — a search, not a menu.** ① **Delete** — nothing sits above it. ② **Surface a missing requirement** — tracing it lands on a client constraint that was always true and never written down; the common case, and often a *different* constraint from the one that bought the parent. ③ **Declare self-derived, naming the parent decision** — and the parent now faces the same test. Naming a parent moves the obligation up, it does not discharge it. Citations chain; the recursion ends at a client constraint or the finding sits at the root, and **a five-deep chain on an ungrounded adjective is one finding, not five.** Record the chain's root, depth and the link at which it stops tracing.
 
+**Fire the stressors at the finished map — the audit's reverse direction.** The forward walk checks stated requirements hold; this checks the map under inputs nobody stated. Same three outputs, same guard. With a held-out set, report the residual index **with its denominator** — a direction signal, not a measurement.
+
 **Count the column — the third reading.** Both invariants ask whether a cell is *filled*; neither asks how many requirements name the same mechanism. Above one is a **coupling finding**: those promises fail together. The instrument is a column count on the map you already have. It is **not** a defect to fix by splitting — a second store derived from a coupling number rather than a client constraint is an uncited mechanism, and rule one deletes it. What the count buys: carry the mechanism onto the ladder as *n* entries rather than one (they may sit on different rungs); check whether the promises sharing it have the same signatories, because the strictest one now sets the floor for all of them; and rank the risk register by the count, since the highest is the largest blast radius on the page.
 
 **The cutover, where something already exists.** In a running system an uncited mechanism is Chesterton's fence rather than a razor: report it as *no recorded reason — confirm before removing*, and produce an incremental path rather than a deletion. Named shapes: **strangler fig** across codebases, **branch by abstraction** inside one. Both keep the system releasable throughout, which is what makes them usable.
 
-**Re-run trigger.** A zero-tolerance count that keeps firing is not an ops problem — it is a signal to re-run the derivation from step 03, because the source of truth was modelled wrong.
+**Re-run trigger.** A zero-tolerance count that keeps firing is an **attractor report**, not an ops problem — it is a signal to re-run the derivation from step 03, because the source of truth was modelled wrong.
 
 ---
 

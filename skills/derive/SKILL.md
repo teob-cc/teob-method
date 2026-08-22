@@ -128,6 +128,7 @@ Then check it three ways: uncited mechanism → delete it or declare it self-der
 
 - **Do not name a technology before step 04.** If the user names one first, accept it as a constraint of the organisation (that is legitimate supply-side input) and record it as such — not as a derived decision.
 - **Do not produce a diagram as the deliverable.** The deliverable is the annotated graph plus the map. A diagram without its annotations is decoration.
+- **The probe exception.** The refusal of invented figures stands — a missing input is a finding, never a blank to fill. A **stressor is not a figure**: it is a labelled probe run *on* the model (no probability, ridiculous allowed), it enters no table, and it carries no number into the arithmetic. Its only legal outputs are a stated requirement, a finding, or a recorded option with a trigger. Accepting a labelled probe is not accepting an invented number.
 - **State what you assumed, every time.**
 - **Take the stop rules out loud** — say which you took and why.
 

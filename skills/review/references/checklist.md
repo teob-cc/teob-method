@@ -109,3 +109,15 @@ Delivery is the one adjacent area whose decisions all get made by default, so th
 - Treat it as a declared hosting posture, and ask whether step 01 chose it.
 - *Backing services as attached resources* contradicts choosing a store by access pattern, invariant and failure mode.
 - *Config in the environment* is wrong for the quasi-static class, which needs history, diff and a reviewer.
+
+
+## The stress pass — questions per artifact noun
+
+For each client class · data class · schema · component name, ask **what hits this?** — regulation, reversal, scale inversion, identity abuse, clock, geography, acquisition. Then:
+
+- Which rows have two or more 1s — what fails together, and is that shared fate traced to a promise?
+- Which column absorbs reversal/migration/residency semantics it was never given?
+- Is any column's row-set a subset of another's (merge candidate)? Any zero column (under-stressed)?
+- Does every stressor resolve to exactly one of: stated requirement / finding / recorded option (with trigger)?
+- Is anything **built** whose only citation is a stressor? (Furniture with a scary story — report under rule one.)
+- Where the ladder exists: is every discovered rung signed like a declared one? Is the reversal path present at all?

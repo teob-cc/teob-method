@@ -1,5 +1,5 @@
 {
   "name": "outside-in",
   "description": "The Outside-In Method — audit an existing system against the deletion test and the traceability rule, or derive a new one from clients, obligations and cost",
-  "version": "0.7.0"
+  "version": "0.8.0"
 }

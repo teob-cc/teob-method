@@ -252,6 +252,10 @@ and which findings would change if a figure contradicted the prose.
 
 Reviewing more than one artifact adds a **Recur** column — *k of N* — to every table above.
 
+### 8 · Stress it (where time permits, or the design is brownfield-critical)
+
+Generate stressors from the artifact's own nouns — classes, data classes, schemas, components — no probability, everything listed, nothing generic. Build the incidence matrix and read it mechanically; report **hyperliminal couplings** (two 1s in one row — co-failures the coupling count cannot see) beside the coupling counts, and type every stressor's outcome as requirement · finding · recorded option. Never recommend a mechanism from a stressor row alone — the matrix total is a measurement, not a target. Brownfield-safe by construction: stressing a running system changes nothing, and the Chesterton clause is untouched.
+
 Close with **the three most expensive findings**, in one sentence each.
 
 ## Rules
