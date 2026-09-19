@@ -9,7 +9,7 @@ does, each proved on the systems where it bites: **<https://teob.cc/method>**
 ## Install (Claude Code)
 
 ```bash
-/plugin marketplace add lambda-house/teob-method
+/plugin marketplace add teob-cc/teob-method
 /plugin install outside-in@teob-method
 ```
 
