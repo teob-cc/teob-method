@@ -42,14 +42,22 @@ Every figure elicited at 01 is either divided here or explicitly carried to a na
 ### 03 · Data
 **Asks** What is true, what is derived from it, and what must never break?
 
-Take the step-01 view list and its bounds — they are promises and are not revised here. Resolve each into truth or projection: a view whose bound is looser than the write path is a projection. Then, per data class: which acknowledgement kind writes need (receipt / reservation / completion) · invariants that no view can tell you about · conflict policy · read-your-writes seams · commitment reads (views a client commits against, which cannot be arbitrarily stale).
+Take the step-01 view list and its bounds — they are promises and are not revised here. Resolve each into truth or projection: a view whose bound is looser than the write path is a projection. Then, per data class: which acknowledgement kind writes need (receipt / reservation / completion — and an acknowledgement the caller's own promise depends on makes that edge **commit-bearing** at 04) · invariants that no view can tell you about · conflict policy · read-your-writes seams · commitment reads (views a client commits against, which cannot be arbitrarily stale).
 
 **Deliverable** A data-class table. This is where most of the design is actually decided.
 
 ### 04 · Storage & transport
 **Asks** Which store families and channel guarantees do the data classes require — and how many runnable units?
 
-Match store family to access pattern. Declare all six channel properties per edge. Then granularity: runtime units, module seams, repo topology — each split citing a force.
+Match store family to access pattern. Declare all **eight** channel properties per edge: sync or async — and if sync, whether the acknowledgement is commit-bearing · delivery guarantee · ordering key · backpressure · message TTL · payload contract · **far side** · **departure**. Plus the inherited latency budget, which is sliced from the caller's and never invented locally. Then granularity: runtime units, module seams, repo topology — each split citing a force.
+
+**Blocking answers two of the eight, not three.** On a synchronous edge the delivery guarantee collapses to *it returned or it did not* and message TTL is vacuous — write both down rather than skipping them. Backpressure does **not** go quiet: a bounded connection pool is a queue with a wait policy and an overflow behaviour, and unless it is bulkheaded per client class the batch job and the interactive path wait in it together.
+
+**Far side** — the far side of a channel is a set whose membership changes while the channel is open. Name the resolver (DNS, a registry, a mesh, a static list) and type it: a store, read through a projection, and a projection owes a staleness bound. That bound is how long this end goes on sending work to somebody who has left.
+
+**Departure** — answered twice. Graceful is derived, not chosen: stop advertising, wait out the far-side bound, then finish what is in flight inside the budget the edge already inherits; drain for less and a planned departure is indistinguishable from a crash. Ungraceful is paid for by properties already chosen — an async consumer replays from its commit point and the dedup key absorbs it; an async producer loses what was buffered and unacknowledged; a synchronous caller is left unable to say whether its write happened.
+
+**A brokered channel is specified more than once — and a store is brokered too.** Producing into a log and consuming from it are two channels around a store. So are writing to and reading from a database: the write path is a producer channel and each reader is a consumer channel of its own. On a log the asymmetry is retention (the store's) against the dedup key (the consumer's). On a database it is **consistency offered against consistency taken**. Name the database once and every one of those is a default.
 
 **Deliverable** The labelled graph: every node typed, every edge annotated.
 
@@ -80,7 +88,9 @@ Per processor: stateless / stateful / batch · inputs and outputs · merge seman
 
 1. Bring the promises forward from step 01 unchanged — the tolerances and the accepted degraded outcomes are already on the table. Do not re-ask.
 2. Prove each promised rung is **reachable on purpose** — a flag, a breaker, a shed rule — and say when it was last exercised. A ladder never exercised is fiction.
-3. Mechanics per edge — timeouts, retries with jitter, circuit breakers, bulkheads, fallbacks, dead-letter handling. Every mechanic traces to a rung a client asked for, or it goes.
+3. Mechanics per edge — timeouts, retries with jitter, circuit breakers, bulkheads, fallbacks, dead-letter handling, and departure behaviour for both kinds of leaving. Every mechanic traces to a rung a client asked for, or it goes.
+
+**A fallback is legal only where there is a lesser answer to drop into.** On a **commit-bearing** edge there is none: the fallback is either a lost write or a double one, and the reachable rungs are pending-with-a-handle or a typed refusal. **An ambiguous outcome is not a rung.** A timed-out synchronous write leaves the caller unable to say whether it committed — that is not *absent, signalled*, because nothing can honestly be signalled. Idempotency on anything retried is what collapses it back onto *correct, slower*; without it, it resolves into a duplicate, and a duplicate on a money path is *wrong*. **The drain interval is not set here** — it was derived at 04 from the far-side bound.
 
 **Deliverable** A reachability proof per promised rung, and the per-edge failure spec. The ladder is carried forward, not authored here.
 
@@ -110,7 +120,7 @@ Detection proportioned to consequence — how badly a client is hurt, and where 
 - **Rollout strategy** ← what must be observed before committing. **Canary** when a graded signal exists and is worth waiting for; its whole value is the abort metric, so a canary without one is a slow deploy at the same price. **Blue-green** when rollback must be *instant*, at the price of a second footprint and state migration solved twice. Rolling replace is the default and cites neither. Name the force, then the strategy.
 - **Evolution** ← the change that must land without an outage. **Parallel change** (expand · migrate · contract) for an incompatible interface — *migrate* is the skipped phase, so give it an owner and a date. **Branch by abstraction** inside one runnable unit. **Strangler fig** for replacing a system that already exists.
 - **Flags have four lifespans, and conflating them is why flag debt accrues.** *Release* toggles are transient and **their removal is part of the mechanism**. *Experiment* toggles live as long as the experiment. *Permissioning* toggles are an authorisation rule wearing a flag's clothes — enforce them at a surface. **Ops toggles are the degradation ladder's actuators**, and are long-lived by design: a rung nobody can step onto during an incident was a document, not a mechanism.
-- **Desired state and drift** ← a drift you must detect. Decompose before adopting: the desired-state repo is a **store, and it is truth** (quasi-static class, needs its own restore path, not rebuildable by replay); the agent's pull is a **channel** owing all six properties, ordering key included; the running system is a **projection** owing a stated staleness bound, commit-to-live, alarmed at half. **Drift is a zero-tolerance count, not a dashboard.** Where nothing but the pipeline can write, there is no drift and the reconciler is uncited.
+- **Desired state and drift** ← a drift you must detect. Decompose before adopting: the desired-state repo is a **store, and it is truth** (quasi-static class, needs its own restore path, not rebuildable by replay); the agent's pull is a **channel** owing all eight properties, ordering key included; the running system is a **projection** owing a stated staleness bound, commit-to-live, alarmed at half. **Drift is a zero-tolerance count, not a dashboard.** Where nothing but the pipeline can write, there is no drift and the reconciler is uncited.
 - **Delivery metrics** — the published set is currently **five**: change lead time · deployment frequency (throughput); change fail rate · deployment rework rate (stability); failed deployment recovery time. Read against a stated tolerance, not an industry percentile.
 
 Configuration is a deploy with no build step and usually no review — versioned, diffable, revertible, alarmed on divergence. **Environment variables are the wrong home for the quasi-static class**: no history, no diff, no reviewer.
@@ -142,7 +152,7 @@ The ten steps emit a contract and a set of working notes. Say which is which, or
 |---|---|
 | **The business supplies** | The operating envelope — capability, hosting posture, contracts held, cost envelope, team topology, jurisdictions, lifecycle |
 | **Both sign** | Client classes and quotas · every tolerance with its conditions · accepted degraded outcomes · zero-tolerance counts · **the shed order** · cost per request · retention and erasure commitments · published SLOs |
-| **Engineering owns** | Primitive typing and the graph · store families · the six channel properties · capacity arithmetic, ratios, headroom · derivation and merge semantics · runtime and placement |
+| **Engineering owns** | Primitive typing and the graph · store families · the eight channel properties · capacity arithmetic, ratios, headroom · derivation and merge semantics · runtime and placement |
 
 The traceability map is joint **column by column**: *Requirement* both sign, *Mechanism* engineering owns, *Verified by* both sign again. The shed order looks like an implementation detail and is a commercial decision — whoever owns the revenue owns it.
 
