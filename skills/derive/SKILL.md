@@ -22,11 +22,13 @@ You will be tempted to reach for a familiar shape — a log, a cache, a service 
 | Primitive | Is | Must declare |
 |---|---|---|
 | **Surface** | Where a client touches the system | Authn/authz and at which hop · contract and versioning · quota per client class · invariants enforced here · partial-result behaviour |
-| **Channel** | A transfer between two nodes | Guarantee · ordering key · failure mode · retry policy · payload schema and compatibility mode · owner |
+| **Channel** | A transfer between two nodes | Eight: sync or async — and if sync, whether the acknowledgement is commit-bearing · guarantee · ordering key · backpressure · message TTL · payload schema and compatibility mode · far side · departure. Plus one inherited (the latency budget) and a named owner |
 | **Processor** | Derives | Stateless / stateful / batch · how partial results compose · error bounds if approximate |
 | **Store** | Holds state | Truth or derived · access pattern · retention · staleness bound if derived |
 
 Types apply to **roles, not products**. One Kafka is a producer channel, a store with a retention window, and one consumer channel per reader — three primitives, three owners. Name the role first; choose the product last.
+
+A database decomposes the same way, and almost nobody draws it that way: a store, a producer channel for the write path, and one consumer channel per reader. The consistency a store **offers** is the store's property; the consistency each reader **takes** — leader or replica, isolation level, staleness tolerance, timeout, page size — belongs to that reader's channel.
 
 A **store is a role with constraints**. "Postgres" is not a design decision until you have written what the store must hold, survive and serve.
 
@@ -113,7 +115,7 @@ Each split must cite a force: independent deployment, fault isolation, a genuine
 
 **Repo topology has its own force, and it is not team count.** It is whether a caller can be reached by your commit — the line between a *public* interface and a *published* one. Two teams who can still land one commit together have not bought a second repository; one customer-held SDK has. That answer was recorded at step 01 and it also decides the version scheme, the compatibility mode and the deprecation window.
 
-**The first split is a phase change, not a refactor.** Inside one process there are no channels. The moment you split, an edge acquires a guarantee, an ordering key, a failure mode, a retry policy, a schema and an owner — all of which were free a moment ago. Buy it deliberately. *"It'll scale better"* is not a force.
+**The first split is a phase change, not a refactor.** Inside one process there are no channels. The moment you split, an edge acquires eight properties — sync or async, a guarantee, an ordering key, backpressure, a TTL, a payload contract, a far side whose membership changes while the channel is open, and a departure behaviour for each end — all of which were free a moment ago. Buy it deliberately. *"It'll scale better"* is not a force.
 
 ## Output
 

@@ -4,7 +4,7 @@
 
 **Surface** — Is authn/authz stated, and at which hop? Is there a request contract with a versioning policy? Is there a quota per client class, and is it policy rather than capacity? Which invariants are enforced here rather than merely checked? What happens on partial results — is there a documented behaviour, or does it silently truncate?
 
-**Channel** — Which delivery guarantee? What is the ordering key, and is ordering scoped to it? What is the failure mode when the far side is down? What is the retry policy, and does it have jitter? **Who owns the payload schema, and what is the compatibility mode?** Is TTL stated, and is it TTL on the message rather than retention on a store?
+**Channel** — Sync or async, and if sync, is the acknowledgement commit-bearing — does the caller's own promise depend on it? Which delivery guarantee? What is the ordering key, and is ordering scoped to it? Is backpressure stated — including on synchronous edges, where the connection pool is the queue and is usually shared across client classes? **Who owns the payload schema, and what is the compatibility mode?** Is TTL stated, and is it TTL on the message rather than retention on a store? **Who is on the far side, how does this end learn it, and what is the staleness bound of that knowledge?** **What happens to work in flight when an end leaves** — once for the planned departure, once for the other kind?
 
 **Processor** — Stateless, stateful or batch? If it combines partial results, how do they compose — and is that composition correct? If it approximates, what is the error bound, and who agreed to it?
 
@@ -22,6 +22,8 @@ The four above are about the system. This one is about the organisation that has
 |---|---|
 | **Reference architecture in disguise** | Technologies appear before any number. The requirements section reads as justification written afterwards |
 | **The undeclared API** | An async channel with no schema owner, no compatibility mode and invisible consumers |
+| **The database drawn as one arrow** | One store, many readers, one unannotated edge. The nightly report and the checkout page take different consistency off the same menu and nothing says so |
+| **A topology true only between deployments** | No edge says who is on its far side or what happens when an end leaves. The design assumes nothing scales in, is replaced or is preempted |
 | **Synchrony mistaken for reliability** | Every write goes to the strict store because "it must be reliable" |
 | **Capacity before demand** | Node counts and coordination protocols exist before requests/second was ever derived |
 | **Metrics of convenience** | Dashboards of what was easy to emit; nothing traces to a promise made to a client |
@@ -89,14 +91,14 @@ Delivery is the one adjacent area whose decisions all get made by default, so th
 **Release**
 - Which strategy, and which force bought it — a graded abort signal (canary) or instant rollback (blue-green)?
 - Does the abort metric exist and is it wired? A canary without one is a slow deploy.
-- Is there fast startup and graceful shutdown? Graceful shutdown is a channel property: in-flight requests and unacked messages.
+- Is there fast startup and graceful shutdown? Graceful shutdown is a channel property, not a process one — it is the **departure** property declared at 04, and its interval is derived from the far-side bound there. A drain shorter than that bound makes a planned departure indistinguishable from a crash.
 - What is the ordering constraint between a schema migration and the deploy that depends on it?
 - When was the rollback last rehearsed? A date, or it is an assumption.
 
 **Reconciliation / GitOps**
 - Is there drift to detect at all? If nothing but the pipeline can write, the reconciler is uncited.
 - Desired-state store: is it treated as truth, with its own restore path?
-- Pull channel: guarantee, ordering key, backpressure, schema, owner.
+- Pull channel: guarantee, ordering key, backpressure, schema, owner, far side, departure.
 - Commit-to-live staleness bound: stated, or only observed afterwards?
 - Is drift a zero-tolerance count or a dashboard?
 

@@ -189,7 +189,7 @@ Most reviews stop at the runtime picture. Carry it further — each is derived f
 | A build system beyond the ecosystem default | A repo where the correct incremental set cannot be computed from the directory layout. **Ask for the ratio**: measured build time vs a stated tolerance | A second build language and a cache to operate, to save a minute |
 | A remote build cache | Build minutes against the cost envelope. It is **a derived store with an invalidation contract** — a non-hermetic build breaks it | A green build of the wrong bytes, undetected |
 | An extra environment | What it verifies that production cannot | A full copy of cost, config drift, data and access surface, unbudgeted |
-| GitOps reconciliation | A drift you must detect. Decompose it: desired-state store (truth) · pull channel (six properties, ordering key included) · reconciler processor · running system as projection | A projection with no staleness bound. Ask for commit-to-live |
+| GitOps reconciliation | A drift you must detect. Decompose it: desired-state store (truth) · pull channel (eight properties, ordering key included) · reconciler processor · running system as projection | A projection with no staleness bound. Ask for commit-to-live |
 | A canary rollout | A graded abort signal that exists | A slow deploy at the same price |
 | Blue-green | Rollback that must be instant | A second production footprint, and state migration twice |
 | A feature flag | Its category and its lifespan. *Release* toggles must be removed; *ops* toggles are the degradation ladder's actuators and are long-lived | Flag debt, and a ladder whose rungs nobody can actually step onto |
