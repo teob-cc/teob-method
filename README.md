@@ -32,26 +32,31 @@ Then, in any repository:
 - then does the division — is the cited requirement's magnitude anywhere near the
   mechanism's? A component can be properly cited and still be four orders of
   magnitude larger than anything asked for
-- builds the traceability map and reads it both ways — uncited mechanisms,
+- builds the traceability map and reads it three ways — uncited mechanisms,
   unmapped requirements, and mechanisms carrying more than one promise
 - enumerates the promises whose acceptable failure count is **zero**, and names
   the mechanism carrying each, its failure mode and the counter that proves it
-- labels every figure **measured**, **contractual** or **assumed** — plus
-  **unconsumed** for a number collected and never used — and turns the assumed
+- labels every figure **measured**, **contractual** or **assumed**, and marks
+  its state — **unconsumed** for a number collected and never used, **missing**
+  for one the arithmetic needed and nobody supplied — and turns the assumed
   ones into a risk register
 - re-derives the arithmetic independently and reports where it disagrees, and
   where it agrees on the wrong quantity
+- where time permits, runs the stress pass on the artifact's own nouns and
+  reports the components that fail together, which the map cannot show at rest
 
 **`derive`** — runs the ten steps forward from a described problem, refusing to
 name any technology until the demand arithmetic binds. Produces the artifacts in
-order: client classes and tolerances, data classes, the labelled graph, the
-degradation ladder, the operations plan, the trace.
+order: client classes with their tolerances and the degraded outcomes they
+accept, data classes, the labelled graph with its sizing, the proof that each
+promised rung is reachable, the operations plan, the trace.
 
 ## Three rules they will not bend
 
 **No invented numbers.** A missing figure is reported as a finding, never filled
 in from a reference architecture. If arithmetic needs an input that does not
-exist, the skill names it, marks it assumed, shows the sensitivity and continues.
+exist, the skill names it, shows the sensitivity and continues: `review` marks
+it missing and proposes nothing, `derive` proposes a value labelled assumed.
 
 **The verdict depends on what the artifact is.** In a design not yet built the
 deletion test is a razor. In a **running system** it is Chesterton's fence: an

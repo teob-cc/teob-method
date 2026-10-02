@@ -34,12 +34,12 @@ Diagrams are the usual casualty — raster images with no extractable text, a ph
 
 Find, or reconstruct, what is outside the system boundary. Two kinds, both required:
 
-- **Demand** — who calls this, at what volume, with what tolerances (latency as a percentile, staleness in units of time, ordering scoped to a key, durability, accuracy). Adversaries are clients too. Your own dependencies are client relationships reversed.
-- **Supply** — the organisation that has to run and pay for it: hosting posture, contracts already held, team capability, on-call reality, cost envelope.
+- **Demand** — who calls this, at what volume, with what tolerances — five: latency as a percentile, ordering scoped to a key, durability and accuracy per class, and freshness per view, in units of time. Adversaries are clients too. Your own dependencies are client relationships reversed.
+- **Supply** — the organisation that has to run and pay for it: team capability and on-call reality, hosting posture, contracts already held, cost envelope, team topology, lifecycle, consumers you cannot rebuild for, compliance and procurement reality, and the compute source where a model is in the graph.
 
 If the artifact under review never states these, **that is the first finding** and it usually explains most of the others. Say so plainly rather than inventing them.
 
-**Supply gets its own table in the output** — hosting posture, contracts held, team capability, cost envelope, lifecycle. Fill in what the artifact states and leave the rest blank. An empty cell is a finding; an empty table is a loud one. Design documents are demand-side by habit, and the half that says who pays for this and who is woken by it is the half that goes missing. A cost figure does not on its own close the gap: *"$150 000 a day"* measured against *"low infrastructure cost"* is a comparison that cannot resolve, because only one side carries a number.
+**Supply gets its own table in the output** — team capability, hosting posture, contracts held, cost envelope, team topology, lifecycle, consumers you cannot rebuild for, compliance and procurement, compute source. Fill in what the artifact states and leave the rest blank. An empty cell is a finding; an empty table is a loud one. Design documents are demand-side by habit, and the half that says who pays for this and who is woken by it is the half that goes missing. A cost figure does not on its own close the gap: *"$150 000 a day"* measured against *"low infrastructure cost"* is a comparison that cannot resolve, because only one side carries a number.
 
 ### 2 · Type every component
 
@@ -47,10 +47,10 @@ Assign each component exactly one primitive. Types apply to **roles, not product
 
 | Primitive | Is | Must declare |
 |---|---|---|
-| **Surface** | Where a client touches the system | Authn/authz and at which hop · request contract and versioning · quota per client class · which invariants are enforced here · pagination and partial-result behaviour |
-| **Channel** | A transfer between two nodes | Guarantee (at-most/at-least/effectively-once) · ordering key · failure mode · retry policy · payload schema and compatibility mode · owner |
-| **Processor** | Derives | Stateless / stateful / batch · how partial results compose · error bounds if it approximates |
-| **Store** | Holds state | What it is the truth of, or what it is derived from · access pattern · retention · staleness bound if derived |
+| **Surface** | Where a client touches the system | Authn/authz and at which hop · request contract and versioning · quota and rate limit per client class · which invariants are enforced here · pagination and partial-result behaviour · idempotency on writes · server-initiated push (webhooks, sockets): signing, redelivery, ordering |
+| **Channel** | A transfer between two nodes | Eight: sync or async — and if sync, whether the acknowledgement is commit-bearing · guarantee (at-most/at-least/effectively-once) · ordering key · backpressure · message TTL · payload schema and compatibility mode · far side · departure. Plus one inherited (the latency budget) and a named owner |
+| **Processor** | Derives | Request-time / stateful stream / batch / model · state size and recovery time · idempotent under replay · keying and parallelism · late / out-of-order handling · rebuild path · how partial results compose · error bounds if it approximates |
+| **Store** | Holds state | What it is the truth of, or what it is derived from · durability and replication · consistency offered · access pattern · retention · size, growth and hot-key profile · staleness bound if derived |
 
 Decomposition is where most findings appear:
 
@@ -83,9 +83,9 @@ For each component: *which constraint's removal would delete this?*
 
 Oversizing is the point of a teaching artifact, so *"delete this"* is the wrong verdict and *"uncited"* is a slander. What survives is the real defect: a requirement so weak that it cannot tell the demonstrated design from one a hundredth its size.
 
-**Record the chain; do not rule on it.** When the answer is an earlier design decision, follow it — which decision produced *that* one, and so on, until you reach a client constraint or run out. A chain is only as cited as its weakest link, and a link that fails at depth 3 is invisible while each component is checked alone.
+**Record the chain; do not rule on it.** When the answer is an earlier design decision, follow it — which decision produced *that* one, and so on, until you reach a constraint from outside — a client's, or a row of the operating envelope — or run out. A chain is only as cited as its weakest link, and a link that fails at depth 3 is invisible while each component is checked alone.
 
-| Root | Depth | Weakest link | Root | Root stated where |
+| Root | Depth | Weakest link | Root kind | Root stated where |
 |---|---|---|---|---|
 | "High availability" — no figure, no client named | 5 | The root itself | demand — ungrounded | §2, adjective only |
 | A 100 ms latency budget | 4 | Link 3 — *"the index grows too large for one server"*, never computed | demand | §1 client table |
@@ -93,7 +93,7 @@ Oversizing is the point of a teaching artifact, so *"delete this"* is the wrong 
 
 The second is the instructive shape: two properly derived links, then an unquantified premise, and everything after it inherits the gap. The third is the shape this table used to get wrong: a correctly rooted chain whose root the artifact never wrote down.
 
-**The Root column takes one of four values: `demand` · `supply` · `self-derived` · `unrecorded`.** A yes/no column here is a trap — it has no cell for the state a reviewer is most often in, so the cell gets filled with a guess.
+**The Root kind column takes one of four values: `demand` · `supply` · `self-derived` · `unrecorded`.** A yes/no column here is a trap — it has no cell for the state a reviewer is most often in, so the cell gets filled with a guess.
 
 **Never resolve an unrecorded root by inference, and know which way you would guess.** Design documents are demand-shaped by habit, so an inferred root drifts toward demand: the reviewer invents a client who wanted this, and the finding lands against a mechanism that was in fact answering a cost ceiling or a contract. Getting it backwards is not a labelling error — it inverts the disposition, because a demand-rooted mechanism with no matching requirement is *delete or surface the requirement*, while a supply-rooted one is *keep, and record the second citation*. When the root is unrecorded, write `unrecorded`, name the owner who can settle it, and let the table carry the question into the review.
 
@@ -105,7 +105,7 @@ A mechanism that passes the deletion test can still be wrong by two orders of ma
 
 So for every mechanism that survives step 3, do the division:
 
-> **What the cited requirement demands ÷ what the mechanism supplies. Record the ratio.**
+> **What the mechanism supplies ÷ what the cited requirement demands, the demand taken at its average so that the peak can be one of the factors named. Record the ratio.**
 
 A ratio near 1 is a mechanism sized to its job. A ratio in the tens is headroom, and the artifact has to say which factor it is — growth, peak, or failover. A ratio in the hundreds or above means the stated requirement cannot discriminate the mechanism, and the finding is recorded against the requirement, exactly as in the didactic case above.
 
@@ -121,38 +121,45 @@ If the division cannot be done because the mechanism's capacity is nowhere state
 
 Every requirement must be **testable** — a number, a bound, or a condition. "Highly available" is not a requirement; "99.9% of writes acknowledged within 200 ms during the nightly partner window" is. Every tolerance names the conditions it holds under.
 
-Read the map in both directions. Then read it a third way: **a mechanism serving three requirements is a coupling finding** — when it breaks, three promises break at once. Report the count beside each mechanism and rank findings by it, since the highest count is the largest blast radius on the page. Do **not** recommend splitting to reduce a count: a mechanism derived from a coupling number rather than a client constraint is uncited, and the first rule deletes it. What the count obliges is a ladder entry per promise, a check that the promises sharing it have the same signatories, and its place at the top of the register.
+Read the map in both directions. Then read it a third way: **a mechanism named by more than one requirement is a coupling finding** — one serving three breaks three promises at once. Report the count beside each mechanism and rank findings by it, since the highest count is the largest blast radius on the page. Do **not** recommend splitting to reduce a count: a mechanism derived from a coupling number rather than a constraint outside the system is uncited, and the first rule deletes it. What the count obliges is a ladder entry per promise, a check that the promises sharing it have the same signatories, and its place at the top of the register.
 
 ### 6 · Label every figure's provenance
+
+Provenance — where a figure came from. Three labels:
 
 | Label | Means |
 |---|---|
 | **measured** | Came from production telemetry or a load test. Name the source |
 | **contractual** | Came from an SLA, a contract, or a written commitment |
 | **assumed** | Somebody made it up — including you |
+
+State — recorded beside the provenance:
+
+| State | Means |
+|---|---|
 | **unconsumed** | Stated, and nothing divides it, bounds anything by it, or decides with it. Write *nothing* in the Supports column |
 | **missing** | Required by an arithmetic step and never stated. Name the input, the step that needed it, and the sensitivity band across plausible values |
 
-The first three say where a figure came from; the last two say whether anything uses it. They are different axes and they combine — *measured, unconsumed* and *assumed — declared* are both real labels.
+The labels say where a figure came from; the states say whether anything divides by it, and whether it was ever supplied. They are different axes: a figure carries one provenance label and may carry a state beside it — *measured, unconsumed* and *assumed, unconsumed* are both real entries.
 
 Every **assumed** figure becomes a risk-register entry with the decision it supports. This is the single most useful thing this skill produces, because assumed figures are load-bearing far more often than anyone admits.
 
-**Unconsumed is the label most reviews miss**, because a labelled figure looks like diligence. A scale figure elicited in the first five minutes and then divided by nothing is a question that should not have been asked, and the design is resting on whatever was reached for instead.
+**Unconsumed is the state most reviews miss**, because a labelled figure looks like diligence. A scale figure elicited in the first five minutes and then divided by nothing is a question that should not have been asked, and the design is resting on whatever was reached for instead.
 
 **The same labels apply to the non-numeric inputs.** A root, a requirement and a tolerance each came from somewhere, and *"the reviewer inferred it"* is a provenance, not a fact. Mark an inferred requirement **assumed** in the row that rests on it, not only in the Scope paragraph — a hedge in Scope does not travel with the finding, and a finding that reads as a result will be actioned as one.
 
-**Never invent a number to fill a gap.** A missing figure is a finding and now has a row. If arithmetic requires an input that does not exist, state the input, mark it **missing**, show the sensitivity, and continue — a retention promise of *forever* with no message rate behind it spans two orders of magnitude across plausible rates, and that span is the finding.
+**Never invent a number to fill a gap.** A missing figure is a finding and now has a row. If arithmetic requires an input that does not exist, state the input, mark it **missing**, show the sensitivity, and continue — a retention promise of *forever* with no message rate behind it spans two orders of magnitude across plausible rates, and that span is the finding. Propose no value: a derivation may assume one; a review leaves the assuming to whoever owns the design.
 
 ### 7 · Check the arithmetic — the quantity first, then the sum
 
 Two passes, and the order is the whole trick:
 
-1. **Demand arithmetic, before any technology is named** — requests/second from stated volumes, bytes/day, working-set size, fan-out. Round out loud: a day is ~10⁵ seconds.
-2. **Capacity arithmetic, after the store is chosen** — node counts, replica counts, headroom.
+1. **Demand arithmetic, before any technology is named** — peak request rate per client class from stated volumes, data volume and growth, working-set size, and the cost envelope it has to fit. Round out loud: a day is ~10⁵ seconds.
+2. **Capacity arithmetic, after the store is chosen** — amplification, node counts, replica counts, headroom.
 
 A design that names a technology before pass 1 has decided by reference architecture. Compute pass 1 yourself and compare: *"the assertion is N nodes; the division gives 3."* Assertions and derivations disagree, and only one of them can be checked.
 
-Then ask two questions of every figure, in this order:
+Then ask three questions of every figure, in this order:
 
 1. **Is this the quantity the decision needs?** An entitlement — users × quota — is not a storage requirement; the requirement is what they actually store per day. One design computes 500 PB of entitlement exactly, against a real consumption of 10 TB/day that takes 137 years to reach it, and sizes its storage against the wrong one.
 2. **Is this the figure that decides something?** Arithmetic drifts toward whichever quantity is most impressive or most tractable, and neither is reliably the one a decision waits on. Two directions, both seen: a design computes a media volume of tens of petabytes nowhere and its availability table — six orders of magnitude smaller — twice, because the small one is easy; another computes a petabyte a day of stored originals and never the few terabytes of thumbnails that carry *all* of its stated latency requirement, because the large one is impressive. **Ask what each promise waits on, and check that a figure exists for it.**
@@ -164,7 +171,7 @@ Then ask two questions of every figure, in this order:
 
 By name, and separately from everything above: which promises have an acceptable failure count of **zero** rather than a percentile? Consent honoured. Data not lost. A prohibited item never served. Money never taken twice.
 
-For each — the promise, the mechanism carrying it, that mechanism's failure mode, and the counter that proves it. Three things to look for, none of which the earlier steps will surface on their own:
+For each — the promise, the mechanism carrying it, that mechanism's failure mode, and the counter that proves it. Four things to look for, none of which the earlier steps will surface on their own:
 
 - **A percentile attached to a zero-tolerance promise is already a finding.** "99.9% of opt-outs honoured" is a commitment to violate consent a thousand times per million.
 - **A single unguarded mechanism.** One filter, one flag check, one callback. Ask what happens when it is down, skipped, or raced. A consent check that runs *before* a queue and never again does not survive an opt-out during the retry window; a status flipped by a callback that never arrives stays pending forever.
@@ -177,10 +184,10 @@ Most reviews stop at the runtime picture. Carry it further — each is derived f
 
 - **Observability** — is detection proportioned to consequence, or to what was easy to emit? Zero-tolerance promises have their own step above; here, check that what *is* watched traces to a promise made to a client.
 - **Operations** — can this organisation actually staff, host and afford this shape?
-- **Delivery** — does each boundary buy something (independent deployment, fault isolation, a genuinely different scaling axis, an existing team boundary)? "It'll scale better" is not a force. And run the citation check below: delivery machinery is the one area where **every decision is made by default if nobody makes it**, so almost none of it has ever been challenged.
+- **Delivery** — does each boundary buy one of the six forces (independent delivery, independent scaling, fault isolation, a trust zone, ownership by a different team, a runtime mismatch)? "It'll scale better" is not a force. And run the citation check below: delivery machinery is the one area where **every decision is made by default if nobody makes it**, so almost none of it has ever been challenged.
 - **Codebase lifecycle** — spike, one-off, prototype-becoming-platform, or platform? Does the repo topology match?
 
-**The delivery citations.** Each of these is a mechanism with a recurring cost. Ask what deletes it, and apply the same four answers as anywhere else — with two warnings specific to this area. **Delivery is where an artifact is least likely to have written down why**, so *unrecorded* will be the honest answer far more often than *uncited*: name the owner who could settle it and leave the cell. And several of these are **supply**-rooted rather than demand-rooted — a build cache bought by a cost ceiling, an environment bought by a procurement rule, a repo split bought by a contract with an external consumer. Calling one of those uncited inverts the recommendation, because supply-rooted means *keep, and record the second citation*.
+**The delivery citations.** Each of these is a mechanism with a recurring cost. Ask what deletes it, and apply the same five answers as anywhere else — with two warnings specific to this area. **Delivery is where an artifact is least likely to have written down why**, so *unrecorded* will be the honest answer far more often than *uncited*: name the owner who could settle it and leave the cell. And several of these are **supply**-rooted rather than demand-rooted — a build cache bought by a cost ceiling, an environment bought by a procurement rule, a repo split bought by a contract with an external consumer. Calling one of those uncited inverts the recommendation, because supply-rooted means *keep, and record the second citation*.
 
 | Mechanism | Cites | If nothing cites it |
 |---|---|---|
@@ -195,6 +202,10 @@ Most reviews stop at the runtime picture. Carry it further — each is derived f
 | A feature flag | Its category and its lifespan. *Release* toggles must be removed; *ops* toggles are the degradation ladder's actuators and are long-lived | Flag debt, and a ladder whose rungs nobody can actually step onto |
 
 **Where a design calls itself twelve-factor**, that is not a compliance claim to accept — it is **a hosting posture already chosen**, and step 01 is where the choice belonged. Two factors need checking against this method rather than agreed with: *backing services as attached resources* treats a store as a swappable URL, when the store was supposed to be chosen by access pattern, invariant and failure mode; and *config in the environment* is right for secrets and wiring and wrong for the quasi-static class, which needs history, diff and a reviewer. The rest are compatible; *build/release/run*, *explicit dependencies*, *disposability* and *dev/prod parity* are worth confirming rather than questioning.
+
+### 10 · Stress it (where time permits, or the design is brownfield-critical)
+
+Generate stressors from the artifact's own nouns — classes, data classes, schemas, components — no probability, everything listed, nothing generic. Build the incidence matrix and read it mechanically; report **hyperliminal couplings** (two 1s in one row — co-failures the coupling count cannot see) beside the coupling counts, and type every stressor's outcome as requirement · finding · recorded option. Never recommend a mechanism from a stressor row alone — the matrix total is a measurement, not a target. Brownfield-safe by construction: stressing a running system changes nothing, and the Chesterton clause is untouched.
 
 ## When the artifact declares its own process
 
@@ -226,19 +237,22 @@ and which findings would change if a figure contradicted the prose.
 | Component | Type | Deletion test | Ratio | Disposition |
 
 ## Chains
-| Root | Depth | Weakest link | Root (demand / supply / self-derived / unrecorded) | Root stated where |
+| Root | Depth | Weakest link | Root kind (demand / supply / self-derived / unrecorded) | Root stated where |
 
 ## Unmapped requirements
 | Requirement | Stated where | No mechanism found for |
+
+## Traceability map
+| Requirement (testable) | Mechanism | Coupling count | Verified by |
 
 ## Zero-tolerance promises
 | Promise | Carrying mechanism | Failure mode | Counter that proves it |
 
 ## Supply
-| Hosting posture | Contracts held | Team capability | Cost envelope | Lifecycle | Consumers you cannot rebuild for |
+| Team capability | Hosting posture | Contracts held | Cost envelope | Team topology | Lifecycle | Consumers you cannot rebuild for | Compliance and procurement | Compute source |
 
 ## Provenance
-| Figure | Value | Label | Supports | Risk if wrong |
+| Figure | Value | Provenance | State | Supports | Risk if wrong |
 
 ## Arithmetic
 | Claim in the document | Independent derivation | Right quantity? | Agrees? |
@@ -248,13 +262,12 @@ and which findings would change if a figure contradicted the prose.
 
 ## Adjacent areas
 | Area | Derived, or assumed? | Finding |
+
+## Stress pass (if run)
+| Stressor | Components hit | Outcome (requirement / finding / recorded option) |
 ```
 
 Reviewing more than one artifact adds a **Recur** column — *k of N* — to every table above.
-
-### 8 · Stress it (where time permits, or the design is brownfield-critical)
-
-Generate stressors from the artifact's own nouns — classes, data classes, schemas, components — no probability, everything listed, nothing generic. Build the incidence matrix and read it mechanically; report **hyperliminal couplings** (two 1s in one row — co-failures the coupling count cannot see) beside the coupling counts, and type every stressor's outcome as requirement · finding · recorded option. Never recommend a mechanism from a stressor row alone — the matrix total is a measurement, not a target. Brownfield-safe by construction: stressing a running system changes nothing, and the Chesterton clause is untouched.
 
 Close with **the three most expensive findings**, in one sentence each.
 
@@ -265,7 +278,7 @@ Close with **the three most expensive findings**, in one sentence each.
 - **Do not report a finding you cannot demonstrate.** Show the arithmetic, quote the document, or drop it.
 - **Say what you could not check.** A review that silently skipped the storage layer reads as a review that cleared it.
 - Where the artifact is thin, the finding is the thinness — not an excuse to fill it in from a reference architecture.
-- **Adjudicate the chain's root; leave its worth to the human.** Two different questions. *Does the chain reach a client constraint?* is mechanical — follow it and report the root, the depth, and the link at which it stops tracing. *Is this mechanism worth its cost?* is not yours. Report the finding **at the break, once**: a five-deep chain standing on an ungrounded adjective is one finding against the adjective, not five against the mechanisms, and each link may be perfectly derived from the one above it.
+- **Adjudicate the chain's root; leave its worth to the human.** Two different questions. *Does the chain reach a constraint from outside — a client's, or a row of the operating envelope?* is mechanical — follow it and report the root, the depth, and the link at which it stops tracing. *Is this mechanism worth its cost?* is not yours. Report the finding **at the break, once**: a five-deep chain standing on an ungrounded adjective is one finding against the adjective, not five against the mechanisms, and each link may be perfectly derived from the one above it.
 - **Do not report a ratio you have not divided.** "Oversized" without the division is taste, and taste arguments get settled by seniority.
 - **Never assert an inference as a result.** Every finding that rests on something you supplied — a root, a requirement, a posture, a tolerance — says so inside the finding. This is the skill's whole safety mechanism: an inference marked as an inference is overturned by the reader in one line, and an inference presented as a finding is actioned.
 - **Do not interview the human to close a gap.** An unstated requirement is the finding; asked and answered in conversation, it never reaches the artifact, and the corpus mode (twelve designs, recurrence columns) stops working. The exception is narrow and testable: **ask only when the classification changes the disposition, not the label** — demand-versus-supply on an unrecorded root qualifies, because the two produce opposite recommendations. Everything else goes in the table.

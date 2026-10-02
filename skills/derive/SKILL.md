@@ -21,10 +21,10 @@ You will be tempted to reach for a familiar shape — a log, a cache, a service 
 
 | Primitive | Is | Must declare |
 |---|---|---|
-| **Surface** | Where a client touches the system | Authn/authz and at which hop · contract and versioning · quota per client class · invariants enforced here · partial-result behaviour |
+| **Surface** | Where a client touches the system | Authn/authz and at which hop · contract and versioning · quota and rate limit per client class · invariants enforced here · partial-result behaviour · idempotency on writes · server-initiated push (webhooks, sockets): signing, redelivery, ordering |
 | **Channel** | A transfer between two nodes | Eight: sync or async — and if sync, whether the acknowledgement is commit-bearing · guarantee · ordering key · backpressure · message TTL · payload schema and compatibility mode · far side · departure. Plus one inherited (the latency budget) and a named owner |
-| **Processor** | Derives | Stateless / stateful / batch · how partial results compose · error bounds if approximate |
-| **Store** | Holds state | Truth or derived · access pattern · retention · staleness bound if derived |
+| **Processor** | Derives | Request-time / stateful stream / batch / model · state size and recovery time · idempotent under replay · keying and parallelism · late / out-of-order handling · rebuild path · how partial results compose · error bounds if approximate |
+| **Store** | Holds state | Truth or derived · durability and replication · consistency offered · access pattern · retention · size, growth and hot-key profile · staleness bound if derived |
 
 Types apply to **roles, not products**. One Kafka is a producer channel, a store with a retention window, and one consumer channel per reader — three primitives, three owners. Name the role first; choose the product last.
 
@@ -37,35 +37,35 @@ A **store is a role with constraints**. "Postgres" is not a design decision unti
 Detailed procedure per step: `references/ten-steps.md`. Load it when you begin step 01 and keep it open.
 
 ### Phase I · Outside
-- **01 · Outside** — characterise every entity outside the boundary. **Demand**: who calls this, at what volume, with what tolerances. **Supply**: what this organisation can host, staff, afford and already has contracts for. Adversaries are clients. Your dependencies are client relationships reversed.
-- **02 · Load** — the first arithmetic pass. Requests/second, bytes/day, working-set size, fan-out, growth. **Before any technology is named.**
+- **01 · Outside** — characterise every entity outside the boundary. **Demand**: who calls this, at what volume, with what tolerances — five: latency, ordering, durability and accuracy per class, freshness per view — and what each class is still handed when a dependency is down. **Supply**: what this organisation can host, staff, afford and already has contracts for. Adversaries are clients. Your dependencies are client relationships reversed.
+- **02 · Load** — the first arithmetic pass: four demand figures — peak request rate per client class, data volume and growth, working-set size, and the cost envelope carried in from 01. **Before any technology is named.**
 
 ### Phase II · Shape
-- **03 · Data** — per data class: what is truth, what is derived, freshness tolerance, the acknowledgement each write needs, and the invariants no view can tell you about.
-- **04 · Storage & transport** — now, and only now, choose store families and channel guarantees. Decide granularity: how many runnable units, and where the seams go.
-- **05 · Trust** — boundaries, authn/authz per surface, data classification, what is enforced where.
+- **03 · Data** — resolve each view into truth or projection against the freshness bound declared for it at 01; then per data class: the acknowledgement each write needs, its sensitivity classification, and the invariants no view can tell you about.
+- **04 · Storage & transport** — now, and only now, choose store families and channel guarantees. Decide granularity: how many runnable units, and where the seams go. Then run the second arithmetic pass (sizing) immediately, while the choice is still cheap to reverse.
+- **05 · Trust** — enforcement of the classification fixed at 03: who may see which data class, the single surface that authorises it, tenancy, erasure.
+- **06 · Derivation** — the processors: what computes each projection, replay and rebuild, merge semantics, error bounds.
 
-### Phase III · Behaviour
-- **06 · Derivation** — the processors, what they compute, merge semantics, error bounds.
-- **07 · Failure** — per client class: the tolerance, the degradation ladder, then the mechanics per edge.
-- **08 · Runtime & placement** — instances, regions, placement, the second arithmetic pass (capacity).
+### Phase III · Reality
+- **07 · Failure** — the ladder was promised at 01: prove each rung reachable on purpose, then derive the mechanics per edge. Then the stress pass.
+- **08 · Runtime & placement** — deliberately small: runtime by organisational constraint, the artifact per runnable unit, environments, the placement map.
+- **09 · Operations** — observability proportioned to consequence: outcome KPIs, zero-tolerance counts, SLOs, rung metrics, audits, tracing. Then delivery and release shape, ownership, cost.
 
-### Phase IV · Carry
-- **09 · Operations** — observability proportioned to consequence, outcome KPIs, zero-tolerance counts, delivery and release shape, cost.
+### Phase IV · Proof
 - **10 · Trace** — the traceability map, read three ways: cited, mapped, and counted. Re-run trigger.
 
 ## The two arithmetic passes
 
 The order is the whole trick.
 
-1. **Demand, before choosing a store.** Derive requests/second, bytes/day and working set from the volumes stated at step 01. Round out loud and on purpose — a day is about 10⁵ seconds; a billion requests a day is ~12,000/s average; take a peak factor and say what it is.
-2. **Capacity, after choosing a store.** Node counts, replicas, headroom — these need the store's per-node characteristics, so they cannot exist earlier.
+1. **Demand, before choosing a store — step 02.** Derive requests/second, bytes/day and working set from the volumes stated at step 01; the cost envelope from 01 is the fourth figure. Round out loud and on purpose — a day is about 10⁵ seconds; a billion requests a day is ~12,000/s average; take a peak factor and say what it is.
+2. **Capacity, after choosing a store — the sizing pass, inside step 04.** Amplification, node counts, replicas, headroom — these are properties of the graph just drawn and need the store's per-node characteristics, so they cannot exist earlier. Run it immediately, while the choice is still cheap to reverse.
 
 Doing capacity first is how a design ends up with a coordination protocol between 128 hosts that the arithmetic never required.
 
 **Do the division in both directions.** Compute what one node can serve before deciding you need many. Most systems fit on fewer nodes than the shape suggests, and the extra nodes are then justified by failover — which is a *stated reason*, not a silent one.
 
-**Divide at the moment you choose, not in review.** Citing a constraint is not enough. Record what the constraint demands, what the mechanism supplies, and the ratio between them. Near 1 is sized to the job. In the tens is headroom, and you must name the factor — growth, peak, or failover. In the hundreds means the citation is decorative and the shape came from a reference architecture; the mechanism is not wrong so much as unjustified at that size. The ratio costs one line at the moment of choice, and a re-derivation to recover afterwards.
+**Divide at the moment you choose, not in review.** Citing a constraint is not enough. Record what the constraint demands, what the mechanism supplies, and the ratio between them — supplied over demanded, with the demand taken at its average. Near 1 is sized to the job. In the tens is headroom, and you must name the factor — growth, peak, or failover. In the hundreds means the citation is decorative and the shape came from a reference architecture; the mechanism is not wrong so much as unjustified at that size. The ratio costs one line at the moment of choice, and a re-derivation to recover afterwards.
 
 ## Acknowledgements scope the expensive store
 
@@ -77,7 +77,7 @@ Ask of every write: **if this call returned "probably", would the next screen be
 | **Reservation** | A contended resource is held for this caller now, usually with an expiry | Needs the strict store and the invariant guarding it |
 | **Completion** | Final state reached at the moment of the response | The expensive one, and frequently unnecessary |
 
-Only the writes that genuinely need reservation or completion belong in the strict store. Everything else is a projection with a stated staleness bound. **Reliability is durability; synchrony is a UX decision** — conflating them drags every write into the expensive store, and with it every scaling problem that store has.
+Only the writes that genuinely need reservation or completion belong in the strict store; a receipt costs one durable append. Truth covers exactly what the acknowledgements and the invariants require — everything else is a projection with a stated staleness bound. **Reliability is durability; synchrony is a UX decision** — conflating them drags every write into the expensive store, and with it every scaling problem that store has.
 
 ## Provenance — non-negotiable
 
@@ -111,9 +111,9 @@ Taking a stop rule is the method working. Running all ten steps on a trivial sys
 - **Module seams** — internal boundaries with explicit contracts
 - **Repo topology** — one repo or many
 
-Each split must cite a force: independent deployment, fault isolation, a genuinely different scaling axis, or an existing team boundary that is not going away.
+Each runtime split must cite one of six forces: independent delivery (a different cadence) · independent scaling (a different axis) · fault isolation · trust zone (regulated data or a different adversary) · ownership (a different team's pager) · runtime mismatch (a latency floor, a GPU, a forced language).
 
-**Repo topology has its own force, and it is not team count.** It is whether a caller can be reached by your commit — the line between a *public* interface and a *published* one. Two teams who can still land one commit together have not bought a second repository; one customer-held SDK has. That answer was recorded at step 01 and it also decides the version scheme, the compatibility mode and the deprecation window.
+**Repo topology has its own force, and it is not team count.** It is whether a caller can be reached by your commit — the line between a *public* interface and a *published* one. Two teams who can still land one commit together have not bought a second repository; one customer-held SDK has. That answer was recorded at step 01 and it also decides the version scheme, the compatibility promise and the deprecation window.
 
 **The first split is a phase change, not a refactor.** Inside one process there are no channels. The moment you split, an edge acquires eight properties — sync or async, a guarantee, an ordering key, backpressure, a TTL, a payload contract, a far side whose membership changes while the channel is open, and a departure behaviour for each end — all of which were free a moment ago. Buy it deliberately. *"It'll scale better"* is not a force.
 
@@ -124,13 +124,13 @@ Produce the artifacts in order, each small enough to fit on a screen. Close with
 | Requirement (testable) | Mechanism | Verified by |
 |---|---|---|
 
-Then check it three ways: uncited mechanism → delete it or declare it self-derived with its parent decision; unmapped requirement → design for it; **the same mechanism named by more than one requirement → a coupling finding**, recorded rather than fixed, carried onto the ladder as one entry per promise, and used to rank the risk register.
+Then check it three ways: uncited mechanism → take the first disposition that applies — delete it · surface the missing requirement it traces to (the common case) · declare it self-derived, naming the parent decision, which then faces the same test — and where the system is already running it is Chesterton's fence, reported as *no recorded reason — confirm before removing*; unmapped requirement → design for it; **the same mechanism named by more than one requirement → a coupling finding**, recorded rather than fixed, carried onto the ladder as one entry per promise, and used to rank the risk register.
 
 ## Rules
 
 - **Do not name a technology before step 04.** If the user names one first, accept it as a constraint of the organisation (that is legitimate supply-side input) and record it as such — not as a derived decision.
 - **Do not produce a diagram as the deliverable.** The deliverable is the annotated graph plus the map. A diagram without its annotations is decoration.
-- **The probe exception.** The refusal of invented figures stands — a missing input is a finding, never a blank to fill. A **stressor is not a figure**: it is a labelled probe run *on* the model (no probability, ridiculous allowed), it enters no table, and it carries no number into the arithmetic. Its only legal outputs are a stated requirement, a finding, or a recorded option with a trigger. Accepting a labelled probe is not accepting an invented number.
+- **The probe exception.** The refusal of invented figures stands — a missing input is a finding, never a blank to fill silently. A **stressor is not a figure**: it is a labelled probe run *on* the model (no probability, ridiculous allowed), it does not enter the map's first column, and it carries no number into the arithmetic. Its only legal outputs are a stated requirement, a finding, or a recorded option with a trigger. Accepting a labelled probe is not accepting an invented number.
 - **State what you assumed, every time.**
 - **Take the stop rules out loud** — say which you took and why.
 
