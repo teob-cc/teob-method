@@ -8,7 +8,7 @@
 
 **Processor** — Request-time, stateful stream, batch or model? How large is its state, and how long does it take to recover? Is it idempotent under replay? What is the keying, and what happens to late or out-of-order input? How is its output rebuilt from scratch, and how long does that take? If it combines partial results, how do they compose — and is that composition correct? If it approximates, what is the error bound, and who agreed to it?
 
-**Store** — Is this the truth of something, or derived from something? If derived: what is the staleness bound, and is it stated in units of time? How durable is it, and how is it replicated? Which consistency does it offer — and is what each reader takes off that menu recorded on the reader's channel? What is the access pattern, and does the store family match it? What is the retention, and who decided it? What are its size, growth and hot-key profile? Is there a resharding path?
+**Store** — Is this the truth of something, or derived from something? If derived: what is the staleness bound, and is it stated in units of time? How durable is it, and how is it replicated — and if more than one process plays it, are its replication and membership channels answered (synchronous or not, what a lagging replica can still catch up on, what a rolling upgrade speaks), do they actually support the consistency it claims, and is there a rule keeping its members out of one failure domain? Which consistency does it offer — and is what each reader takes off that menu recorded on the reader's channel? What is the access pattern, and does the store family match it? What is the retention, and who decided it? What are its size, growth and hot-key profile? Is there a resharding path?
 
 ## Supply question set
 

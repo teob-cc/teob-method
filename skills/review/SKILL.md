@@ -50,7 +50,7 @@ Assign each component exactly one primitive. Types apply to **roles, not product
 | **Surface** | Where a client touches the system | Authn/authz and at which hop · request contract and versioning · quota and rate limit per client class · which invariants are enforced here · pagination and partial-result behaviour · idempotency on writes · server-initiated push (webhooks, sockets): signing, redelivery, ordering |
 | **Channel** | A transfer between two nodes | Eight: sync or async — and if sync, whether the acknowledgement is commit-bearing · guarantee (at-most/at-least/effectively-once) · ordering key · backpressure · message TTL · payload schema and compatibility mode · far side · departure. Plus one inherited (the latency budget) and a named owner |
 | **Processor** | Derives | Request-time / stateful stream / batch / model · state size and recovery time · idempotent under replay · keying and parallelism · late / out-of-order handling · rebuild path · how partial results compose · error bounds if it approximates |
-| **Store** | Holds state | What it is the truth of, or what it is derived from · durability and replication · consistency offered · access pattern · retention · size, growth and hot-key profile · staleness bound if derived |
+| **Store** | Holds state | What it is the truth of, or what it is derived from · durability and replication · consistency offered · access pattern · retention · size, growth and hot-key profile · staleness bound if derived · where several processes play it, the channels between them (replication, membership) and the placement rule that keeps members out of one failure domain |
 
 Decomposition is where most findings appear:
 
