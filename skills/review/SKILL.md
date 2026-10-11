@@ -57,13 +57,13 @@ Decomposition is where most findings appear:
 - A **log** is not one thing — it is a producer channel, a store with a retention window, and one consumer channel per reader. Three primitives, three owners.
 - A **cache** is a derived store with an invalidation contract, not a fifth primitive.
 - A **database with CDC** is a store *and* a producer channel.
-- **Message TTL is not store retention.** They are different properties on different primitives, and TTL is vacuous on a synchronous channel.
+- **Message TTL is not store retention.** They are different properties on different primitives, and business expiry remains separate from the synchronous response deadline.
 
 Flag any component whose declared properties are missing. An async channel with no stated schema owner has **published an API by accident** and promised nothing about it.
 
 ### 3 · Run the deletion test
 
-For each component: *which constraint's removal would delete this?*
+For each component: *what promises become unsupported if this is removed, including recovery, redundancy and shared obligations?* A shared component need not disappear when one requirement is removed.
 
 - **Answers with a client constraint** → keep, record the citation.
 - **Answers with a supply constraint** → keep, record it as supply. A cost ceiling, a contract already held, a licence, a resource the organisation is unwilling to commit indefinitely — these are constraints, not excuses, and a mechanism they produce is cited.
@@ -115,17 +115,17 @@ A requirement of 10 000 IDs/s against a design capacity of 4.19 billion IDs/s is
 
 If the division cannot be done because the mechanism's capacity is nowhere stated, **that is the finding.** A mechanism nobody sized cannot be shown to be the right size.
 
-**Divide per key as well as per node.** For every hot key and every invariant's scope unit: the hottest unit's peak rate ÷ what one key can serialise, about 1 ÷ the commit latency of its conditional write. Near or above 1 means serialising that key cannot hold whatever the node count; a design that adds nodes for it has divided the wrong way. **A guarantee is a mechanism too, and divides against its tolerance**: a consistency class bought above what the tolerance needs — causal bought only to get read-your-writes and monotonic reads — is disproportion; an isolation level below what an invariant's scope needs is a correctness finding (below, step 8).
+**Divide per hot scope.** Divide each hot scope’s peak demand by the measured sustainable throughput of its actual enforcement protocol. 1 ÷ commit latency is only a one-at-a-time, stop-and-wait estimate; batching, pipelining and transaction shape can change it. Saturation rejects that implementation under those assumptions, not every serial protocol. An isolation label alone does not prove an invariant: review the complete protocol.
 
 ### 5 · Build the traceability map
 
-| Requirement (testable) | Mechanism | Verified by |
+| Requirement (testable) | Mechanism | Evidence and status |
 |---|---|---|
 | Consumer reads, p99 ≤ 200 ms, from three regions | Derived view replicated per region | Per-region latency SLO with error budget |
 
 Every requirement must be **testable** — a number, a bound, or a condition. "Highly available" is not a requirement; "99.9% of writes acknowledged within 200 ms during the nightly partner window" is. Every tolerance names the conditions it holds under.
 
-Read the map in both directions. Then read it a third way: **a mechanism named by more than one requirement is a coupling finding** — one serving three breaks three promises at once. Report the count beside each mechanism and rank findings by it, since the highest count is the largest blast radius on the page. Do **not** recommend splitting to reduce a count: a mechanism derived from a coupling number rather than a constraint outside the system is uncited, and the first rule deletes it. What the count obliges is a ladder entry per promise, a check that the promises sharing it have the same signatories, and its place at the top of the register.
+Read the map in both directions. A trace row records the requirement, mechanism, assumptions, argument, evidence and status (declared / argued / tested / violated). A planned test is not a passing test; a zero violation counter is not a correctness proof. Count shared citations to prompt failure-mode analysis, then rank risk by consequence, exposure, uncertainty and reversibility, not the count alone.
 
 ### 6 · Label every figure's provenance
 
@@ -146,7 +146,7 @@ State — recorded beside the provenance:
 
 The labels say where a figure came from; the states say whether anything divides by it, and whether it was ever supplied. They are different axes: a figure carries one provenance label and may carry a state beside it — *measured, unconsumed* and *assumed, unconsumed* are both real entries.
 
-Every **assumed** figure becomes a risk-register entry with the decision it supports. This is the single most useful thing this skill produces, because assumed figures are load-bearing far more often than anyone admits. **Rank the register by three readings together**: the figure is assumed, a **one-way** decision rests on it (a partition key, a stored or published format, a published interface, an erasure), and its mechanism's coupling count is above one. A one-way decision on an assumed figure with no probe recorded is a finding of its own.
+Every **assumed** figure becomes a risk-register entry with the decision it supports. This is the single most useful thing this skill produces, because assumed figures are load-bearing far more often than anyone admits. **Use these three readings as prompts, then rank by consequence and exposure**: the figure is assumed, a **one-way** decision rests on it (a partition key, a stored or published format, a published interface, an erasure), and its mechanism's coupling count is above one. A one-way decision on an assumed figure with no probe recorded is a finding of its own.
 
 **Unconsumed is the state most reviews miss**, because a labelled figure looks like diligence. A scale figure elicited in the first five minutes and then divided by nothing is a question that should not have been asked, and the design is resting on whatever was reached for instead.
 
@@ -161,7 +161,7 @@ Two passes, and the order is the whole trick:
 1. **Demand arithmetic, before any technology is named** — peak request rate per client class from stated volumes, data volume and growth, working-set size, and the cost envelope it has to fit. Round out loud: a day is ~10⁵ seconds.
 2. **Capacity arithmetic, after the store is chosen** — amplification, node counts, replica counts, headroom.
 
-Where a request fans out to N parallel calls, check the tail: it misses the leaf percentile p with probability 1 − pᴺ — at p99, about 63% for N = 100 — so each leaf needs about p99.99. Hedging after about the p95 costs about 5% more load, not double; a design that costs it as double, or not at all, has not done the arithmetic.
+For independent, identically distributed leaf calls, 1 − pᴺ is the chance at least one exceeds a threshold met with probability p. State the independence assumption; shared dependencies correlate tails. Hedging at a leaf’s p95 adds roughly 5% requests only in that idealised model; check overload feedback, cancellation and duplicate-effect safety under a separate budget.
 
 A design that names a technology before pass 1 has decided by reference architecture. Compute pass 1 yourself and compare: *"the assertion is N nodes; the division gives 3."* Assertions and derivations disagree, and only one of them can be checked.
 
@@ -175,9 +175,21 @@ Then ask three questions of every figure, in this order:
 
 ### 8 · Enumerate the zero-tolerance promises
 
+Inventory all irreducible inputs and their lineage before declaring anything rebuildable. Authority is independent of consistency: ownership, follows, policy and operation state can be truth without strict writes. View freshness, acknowledgement semantics and invariants determine coordination. A linearizable read does not reserve a resource; bind the promise to an atomic hold or conditional commit.
+
+Effectively-once effects require a defined operation key and an atomic effect, deduplication record and saved result, or a naturally idempotent conditional effect. Specify key scope, payload mismatch, concurrent retries, retention and replay after expiry. External effects need a downstream idempotency contract or reconciliation.
+
+A timeout can leave the result unknown even when the operation is idempotent. Separate the operation’s durable state from the caller’s knowledge; expose a stable handle, status or reconciliation path, retry limits and an escalation deadline. Do not report refusal unless non-acceptance is known.
+
+A freshness promise needs a completeness watermark or equivalent evidence, an age check on the serving path, and a defined refusal, fallback or signed degraded bound when it cannot be met. An as-of marker and an alarm alone do not enforce the bound.
+
+Authentication does not replace authorisation: state operation, object and tenant permissions even at a shallow boundary. Erasure inventories plaintext projections, caches, logs, exports, backups, replicas and key copies, with a deadline and verification per class. Crypto-erasure covers only ciphertext whose every usable key is destroyed; replay and restore must not resurrect erased data.
+
+Escrow is valid only for decomposable invariants with conserved rights, atomic local spending, fenced ownership and safe transfer/reclamation after failure. Rate × lag bounds require hard admission and lag limits, burst and in-flight allowances, and a defined response when those limits fail. Average rate and a lag alarm are not a hard bound; a saga alone is not E3.
+
 By name, and separately from everything above: which promises have an acceptable failure count of **zero** rather than a percentile? Consent honoured. Data not lost. A prohibited item never served. Money never taken twice.
 
-For each — the promise, the mechanism carrying it, that mechanism's failure mode, and the counter that proves it. Four things to look for, none of which the earlier steps will surface on their own:
+For each — the promise, the mechanism carrying it, that mechanism's failure mode, and the audit that detects observed violations. Four things to look for, none of which the earlier steps will surface on their own:
 
 - **A percentile attached to a zero-tolerance promise is already a finding.** "99.9% of opt-outs honoured" is a commitment to violate consent a thousand times per million.
 - **A single unguarded mechanism.** One filter, one flag check, one callback. Ask what happens when it is down, skipped, or raced. A consent check that runs *before* a queue and never again does not survive an opt-out during the retry window; a status flipped by a callback that never arrives stays pending forever.
@@ -194,11 +206,11 @@ Most reviews stop at the runtime picture. Carry it further — each is derived f
 - **Delivery** — does each boundary buy one of the six forces (independent delivery, independent scaling, fault isolation, a trust zone, ownership by a different team, a runtime mismatch)? "It'll scale better" is not a force. And run the citation check below: delivery machinery is the one area where **every decision is made by default if nobody makes it**, so almost none of it has ever been challenged.
 - **Codebase lifecycle** — spike, one-off, prototype-becoming-platform, or platform? Does the repo topology match?
 
-**The delivery citations.** Each of these is a mechanism with a recurring cost. Ask what deletes it, and apply the same five answers as anywhere else — with two warnings specific to this area. **Delivery is where an artifact is least likely to have written down why**, so *unrecorded* will be the honest answer far more often than *uncited*: name the owner who could settle it and leave the cell. And several of these are **supply**-rooted rather than demand-rooted — a build cache bought by a cost ceiling, an environment bought by a procurement rule, a repo split bought by a contract with an external consumer. Calling one of those uncited inverts the recommendation, because supply-rooted means *keep, and record the second citation*.
+**The delivery citations.** Each of these is a mechanism with a recurring cost. Ask what deletes it, and apply the same five answers as anywhere else — with two warnings specific to this area. **Delivery is where an artifact is least likely to have written down why**, so *unrecorded* will be the honest answer far more often than *uncited*: name the owner who could settle it and leave the cell. And several of these are **supply**-rooted rather than demand-rooted — a build cache bought by a cost ceiling, an environment bought by a procurement rule, a repo split bought by an explicit access or release constraint. Calling one of those uncited inverts the recommendation, because supply-rooted means *keep, and record the second citation*.
 
 | Mechanism | Cites | If nothing cites it |
 |---|---|---|
-| A second repository | A caller your commit cannot reach — a *published* interface, not merely a public one | Coordinated pull requests bought for nothing. Splitting a repo does not split a runtime |
+| A second repository | Access, tooling, ownership or release constraints; consumer compatibility is a separate axis | A published consumer alone does not require a repo split |
 | A version scheme | A consumer who chooses when to upgrade. SemVer requires a declared public API; CalVer fits upgrades driven by time, not compatibility | The major number never moves, because nobody could refuse. Identity was enough |
 | A build system beyond the ecosystem default | A repo where the correct incremental set cannot be computed from the directory layout. **Ask for the ratio**: measured build time vs a stated tolerance | A second build language and a cache to operate, to save a minute |
 | A remote build cache | Build minutes against the cost envelope. It is **a derived store with an invalidation contract** — a non-hermetic build breaks it | A green build of the wrong bytes, undetected |
@@ -250,10 +262,10 @@ and which findings would change if a figure contradicted the prose.
 | Requirement | Stated where | No mechanism found for |
 
 ## Traceability map
-| Requirement (testable) | Mechanism | Coupling count | Verified by |
+| Requirement (testable) | Mechanism | Coupling count | Evidence and status |
 
 ## Zero-tolerance promises
-| Promise | Carrying mechanism | Failure mode | Counter that proves it |
+| Promise | Carrying mechanism | Failure mode | Audit and evidence status |
 
 ## Supply
 | Team capability | Hosting posture | Contracts held | Cost envelope and loss lines | Team topology | Lifecycle | Consumers you cannot rebuild for | Compliance and procurement | Compute source |

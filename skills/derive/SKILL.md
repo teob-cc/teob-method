@@ -13,9 +13,9 @@ Full method: <https://teob.cc/method>
 
 ## The one thing that makes this different
 
-Every mechanism you introduce must cite the constraint that produced it. If you cannot name the constraint whose removal deletes a component, **do not add the component.**
+Every mechanism must cite its obligations. Ask what promises would become unsupported if it were removed, including recovery and redundancy. Removing one of several requirements need not delete a shared component. No recorded reason is a finding to investigate, not proof that no reason exists.
 
-You will be tempted to reach for a familiar shape — a log, a cache, a service split — before the numbers exist. That is the failure this method is built to prevent. Reference architectures are not knowledge; they are somebody else's answer to a question you have not asked yet.
+Discovery may iterate and use familiar patterns as hypotheses. The final record must expose how constraints and arithmetic support every choice; a reference architecture does not supply missing requirements.
 
 ## Load the vocabulary first
 
@@ -41,7 +41,7 @@ Detailed procedure per step: `references/ten-steps.md`. Load it when you begin s
 - **02 · Load** — the first arithmetic pass: four demand figures — peak request rate per client class, data volume and growth, working-set size, and the cost envelope carried in from 01. **Before any technology is named.**
 
 ### Phase II · Shape
-- **03 · Data** — resolve each view into truth or projection against the freshness bound declared for it at 01; then per data class: the acknowledgement each write needs, its sensitivity classification, and the invariants no view can tell you about.
+- **03 · Data** — inventory irreducible inputs and each projection’s complete lineage; then choose read consistency, freshness enforcement, acknowledgement semantics, sensitivity and invariant protocols. A freshness allowance alone does not make data derived.
 - **04 · Storage & transport** — now, and only now, choose store families and channel guarantees. Decide granularity: how many runnable units, and where the seams go. Then run the second arithmetic pass (sizing) immediately, while the choice is still cheap to reverse.
 - **05 · Trust** — enforcement of the classification fixed at 03: who may see which data class, the single surface that authorises it, tenancy, erasure.
 - **06 · Derivation** — the processors: what computes each projection, replay and rebuild, merge semantics, error bounds.
@@ -63,7 +63,7 @@ The order is the whole trick.
 
 Doing capacity first is how a design ends up with a coordination protocol between 128 hosts that the arithmetic never required.
 
-**Do the division in three directions — per node, per cluster, per key.** Compute what one node can serve before deciding you need many. Most systems fit on fewer nodes than the shape suggests, and the extra nodes are then justified by failover — which is a *stated reason*, not a silent one. Per key: **the hottest key's peak rate** ÷ what one key can serialise, about 1 ÷ its commit latency (5 ms ≈ 200/s, assumed until measured). Near or above 1, no node count serialises that key — one key lives on one node — and the ratio decides the enforcement rung before any store is named.
+**Do the division per node, cluster and hot scope.** Divide each hot scope’s peak demand by the measured sustainable throughput of its actual enforcement protocol. 1 ÷ commit latency is only a one-at-a-time, stop-and-wait estimate; batching, pipelining and transaction shape can change it. Saturation rejects that implementation under those assumptions, not every serial protocol.
 
 **Divide at the moment you choose, not in review.** Citing a constraint is not enough. Record what the constraint demands, what the mechanism supplies, and the ratio between them — supplied over demanded, with the demand taken at its average. Near 1 is sized to the job. In the tens is headroom, and you must name the factor — growth, peak, or failover. In the hundreds means the citation is decorative and the shape came from a reference architecture; the mechanism is not wrong so much as unjustified at that size. The ratio costs one line at the moment of choice, and a re-derivation to recover afterwards. The fourth field is **what the mechanism introduces** — a cache, a stale window; a conditional write, a per-key ceiling; two sources of truth, a reconciliation. Each introduced item is cited by the mechanism that answers it, carried onto the degradation ladder or the risk register, or accepted in writing.
 
@@ -77,11 +77,11 @@ Ask of every write: **if this call returned "probably", would the next screen be
 | **Reservation** | A contended resource is held for this caller now, usually with an expiry | Needs the strict store and the invariant guarding it |
 | **Completion** | Final state reached at the moment of the response | The expensive one, and frequently unnecessary |
 
-Only the writes that genuinely need reservation or completion belong in the strict store; a receipt costs one durable append. Truth covers exactly what the acknowledgements and the invariants require — everything else is a projection with a stated staleness bound. **Reliability is durability; synchrony is a UX decision** — conflating them drags every write into the expensive store, and with it every scaling problem that store has.
+**Authority and strictness.** Inventory all irreducible inputs and their lineage before declaring anything rebuildable. Authority is independent of consistency: ownership, follows, policy and operation state can be truth without strict writes. View freshness, acknowledgement semantics and invariants determine coordination. A linearizable read does not reserve a resource; bind the promise to an atomic hold or conditional commit.
 
 ## Invariants have their own ladder
 
-**The scope sets the isolation.** One key → a conditional write. Several keys in one partition → serializable; snapshot isolation is not enough (write skew), and record the store's default. Across partitions → move the key, or a saga, which makes the invariant E3 for the saga's length. The partition key is the scope key of the invariant hardest to move.
+**Scope sets the proof obligation.** A one-key conditional update may suffice. Multi-key invariants need serializable transactions or a proved locking/constraint protocol; snapshot isolation alone can permit write skew. Across partitions, coordinate the full scope or revise the signed promise. Escrow is valid only for decomposable invariants with conserved rights, atomic local spending, fenced ownership and safe transfer/reclamation after failure. Rate × lag bounds require hard admission and lag limits, burst and in-flight allowances, and a defined response when those limits fail. Average rate and a lag alarm are not a hard bound; a saga alone is not E3.
 
 **The enforcement ladder** — how strictly an invariant holds under concurrent writers; not **the degradation ladder**, which is what a client is handed.
 
@@ -89,10 +89,12 @@ Only the writes that genuinely need reservation or completion belong in the stri
 |---|---|---|---|
 | **E1 Serialised** | One serialisation point checks every change | None | Contention: the per-key ceiling |
 | **E2 Escrowed** | Writers spend local slices of the quantity, refilled from the serialisation point | None | Slack stranded in slices: undershoot |
-| **E3 Bounded** | Writers check a lagging view; a reconciler compensates afterwards | At most rate × lag, as a number | The overshoot, priced, plus the reconciler |
+| **E3 Bounded** | Admission and propagation bounds, with reconciliation | A proved bound including bursts and in-flight work | Overshoot and reconciliation |
 | **E4 Detected** | No check on the path; an audit finds and compensates | Unbounded until the audit | Every violation, priced |
 
-Take the cheapest rung whose worst-case violation, priced per unit, the signatories accept. A violation that would be *wrong* — a seat sold twice, a balance below zero — allows E1 or E2 only; E2 is the escape for a key too hot for E1. At E3 there are two promises, one enforcer each: the bound on the path, the exact figure in the reconciler (a processor at 06). At E4 the path checks nothing and the audit is the only enforcer.
+Take the cheapest rung whose worst-case violation, priced per unit, the signatories accept. A violation that would be *wrong* — a seat sold twice, a balance below zero — allows E1 or E2 only; E2 is a candidate only when the invariant can be expressed as conserved, independently spendable rights. At E3 there are two promises, one enforcer each: the bound on the path, the exact figure in the reconciler (a processor at 06). At E4 the path checks nothing and the audit is the only enforcer.
+
+Escrow is valid only for decomposable invariants with conserved rights, atomic local spending, fenced ownership and safe transfer/reclamation after failure. Rate × lag bounds require hard admission and lag limits, burst and in-flight allowances, and a defined response when those limits fail. Average rate and a lag alarm are not a hard bound; a saga alone is not E3.
 
 ## Provenance — non-negotiable
 
@@ -100,7 +102,7 @@ Every figure carries a label: **measured** · **contractual** · **assumed**. Ev
 
 **Price both ways.** Beside every cost line, a **loss line**: what one unit of violation costs the business, labelled like any figure. Where overshoot and undershoot have different prices, an approximation states its bound per side and puts the error on the cheaper one.
 
-**Declare the cost to reverse.** From step 04 on, every decision is **one-way** (a partition key, a stored or published format, a published interface, an erasure) or **two-way** (a store behind a module seam, a cache). Before a one-way decision on an assumed figure, buy the measurement — a probe priced against the cost of reversing; a two-way one proceeds and records its re-run trigger.
+**Declare the actual cost to reverse.** Record the rollback window, preserved data, deployed consumers and migration work. A module seam can ease replacement without making data migration cheap or reversible. Expand-and-contract preserves rollback only while old readers, representations and keys remain usable. Measure uncertain inputs before expensive irreversible commitments, or explicitly accept the uncertainty and consequence.
 
 **A mechanism may cite a decision instead of a constraint — then name the decision, and justify *that*.** Nothing partitions itself: a partitioned store was bought by a volume that did not fit one machine, a leader with elections by clients who tolerate no maintenance window. Write the parent down at the moment you take the child, because the chain is checked to its root later either way, and reconstructing it afterwards is the expensive version.
 
@@ -110,15 +112,15 @@ Every figure carries a label: **measured** · **contractual** · **assumed**. Ev
 
 ## Amending an existing derivation
 
-If the user brings a design that already exists and one thing has changed, **do not re-run the ten steps.** A store is a role with constraints; a given technology is one thing sufficient to play it, and when constraints move only the *sufficiency claim* expires. Name the claim that died, re-check the rows the change actually touches, and say explicitly what it does not touch — the second half is what stops a scared team re-opening everything. `references/ten-steps.md` carries the table. Two rules on top of it: **client tolerances do not move because the budget shrank** (that is a finding to escalate with numbers, not a promise to lower quietly), and an amendment to a joint-signature artifact **is void until it is signed again**.
+If one constraint changes in an existing design, begin with the affected claim and re-check its dependency closure. Preserve other claims only after checking their assumptions; a new client or invariant can change the data model itself. Broaden the derivation when foundational assumptions fail. Client tolerances do not move because a budget shrank; renegotiate joint-signature promises explicitly.
 
 ## Stop rules — taking them is the method working
 
 The full pass is an afternoon, and it earns that when there are several client classes, real scale questions or regulated data. A single-class CRUD service on one database deserves **Outside, Data and Trace** in fifteen minutes.
 
-Other stop rules: one node suffices (stop sizing) · shallow trust boundary (stop at authn) · no contended resource (no reservation, no strict store).
+Other stop rules: one node meets demand and failure requirements (stop capacity expansion) · shallow trust boundary (keep the explicit authentication and authorisation policy) · no contended resource (omit reservations if no other invariant requires coordination).
 
-**The delivery stop rules, which are the ones most often skipped past:** one repository until a caller exists that your commit cannot reach · one artifact per runnable unit, and the unit count was settled at 04 · no version scheme until someone can decline an upgrade · no build system beyond the ecosystem default until a *measured* build time crosses a tolerance stated first · no environment beyond production until you can say what it verifies that production cannot · no pipeline stage that cannot fail the build.
+**Delivery stop rules:** Repository topology and consumer compatibility are separate decisions. A published SDK can live in a monorepo. Repo splits cite access, tooling, ownership or release constraints. Own mobile apps, rolling deployments, persisted data and queued messages can retain old versions; declare their compatibility windows even when every source file shares a commit. Keep one artifact per runnable unit; add build machinery and environments only for a recorded constraint.
 
 Taking a stop rule is the method working. Running all ten steps on a trivial system is the method being performed.
 
@@ -132,22 +134,22 @@ Taking a stop rule is the method working. Running all ten steps on a trivial sys
 
 Each runtime split must cite one of six forces: independent delivery (a different cadence) · independent scaling (a different axis) · fault isolation · trust zone (regulated data or a different adversary) · ownership (a different team's pager) · runtime mismatch (a latency floor, a GPU, a forced language).
 
-**Repo topology has its own force, and it is not team count.** It is whether a caller can be reached by your commit — the line between a *public* interface and a *published* one. Two teams who can still land one commit together have not bought a second repository; one customer-held SDK has. That answer was recorded at step 01 and it also decides the version scheme, the compatibility promise and the deprecation window.
+**Repo topology.** Repository topology and consumer compatibility are separate decisions. A published SDK can live in a monorepo. Repo splits cite access, tooling, ownership or release constraints. Own mobile apps, rolling deployments, persisted data and queued messages can retain old versions; declare their compatibility windows even when every source file shares a commit.
 
-**The first split is a phase change, not a refactor.** Inside one process there are no channels. The moment you split, an edge acquires eight properties — sync or async, a guarantee, an ordering key, backpressure, a TTL, a payload contract, a far side whose membership changes while the channel is open, and a departure behaviour for each end — all of which were free a moment ago. Buy it deliberately. *"It'll scale better"* is not a force.
+**A process split adds remote failure and latency.** A process does not itself guarantee atomicity, order or bounded queues. Internal asynchronous transfers also need applicable channel contracts. Record which guarantees come from a transaction, lock, runtime or durable protocol before choosing a split.
 
 ## Output
 
 Produce the artifacts in order, each small enough to fit on a screen. Close with the traceability map:
 
-| Requirement (testable) | Mechanism | Verified by |
+| Requirement (testable) | Mechanism and assumptions | Evidence and status |
 |---|---|---|
 
-Then check it three ways: uncited mechanism → take the first disposition that applies — delete it · surface the missing requirement it traces to (the common case) · declare it self-derived, naming the parent decision, which then faces the same test — and where the system is already running it is Chesterton's fence, reported as *no recorded reason — confirm before removing*; unmapped requirement → design for it; **the same mechanism named by more than one requirement → a coupling finding**, recorded rather than fixed, carried onto the ladder as one entry per promise, and used to rank the risk register — first the entries whose figure is assumed, whose decision is one-way and whose mechanism's coupling count is above one.
+Then check for unmapped requirements, mechanisms with no recorded obligation, and shared dependencies. A trace row records the requirement, mechanism, assumptions, argument, evidence and status (declared / argued / tested / violated). A planned test is not a passing test; a zero violation counter is not a correctness proof. Count shared citations to prompt failure-mode analysis, then rank risk by consequence, exposure, uncertainty and reversibility, not the count alone.
 
 ## Rules
 
-- **Do not name a technology before step 04.** If the user names one first, accept it as a constraint of the organisation (that is legitimate supply-side input) and record it as such — not as a derived decision.
+- **Do not justify a technology without the preceding constraints and arithmetic.** Discovery can iterate; the final decision record follows the steps. If the user names one first, accept it as a constraint of the organisation (that is legitimate supply-side input) and record it as such — not as a derived decision.
 - **Do not produce a diagram as the deliverable.** The deliverable is the annotated graph plus the map. A diagram without its annotations is decoration.
 - **The probe exception.** The refusal of invented figures stands — a missing input is a finding, never a blank to fill silently. A **stressor is not a figure**: it is a labelled probe run *on* the model (no probability, ridiculous allowed), it does not enter the map's first column, and it carries no number into the arithmetic. Its only legal outputs are a stated requirement, a finding, or a recorded option with a trigger. Accepting a labelled probe is not accepting an invented number.
 - **State what you assumed, every time.**

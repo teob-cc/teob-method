@@ -4,7 +4,7 @@ Two skills that carry a system design method your agent can run against **a syst
 you already have**, not a curated example.
 
 Full method, worked example and eight derivations — the method indexed by what it
-does, each proved on the systems where it bites: **<https://teob.cc/method>**
+does, each illustrated on selected systems: **<https://teob.cc/method>**
 
 ## Install (Claude Code)
 
@@ -28,14 +28,14 @@ Then, in any repository:
   that pays for it
 - types every component into surface / channel / processor / store, decomposing
   where one product plays several roles
-- runs the **deletion test**: which constraint's removal would delete this?
+- runs the **deletion test**: what obligations would be unsupported if this were removed?
 - then does the division — is the cited requirement's magnitude anywhere near the
   mechanism's? A component can be properly cited and still be four orders of
   magnitude larger than anything asked for
 - builds the traceability map and reads it three ways — uncited mechanisms,
   unmapped requirements, and mechanisms carrying more than one promise
 - enumerates the promises whose acceptable failure count is **zero**, and names
-  the mechanism carrying each, its failure mode and the counter that proves it
+  the mechanism carrying each, its failure mode and the audit that detects violations, with evidence status
 - labels every figure **measured**, **contractual** or **assumed**, and marks
   its state — **unconsumed** for a number collected and never used, **missing**
   for one the arithmetic needed and nobody supplied — and turns the assumed
@@ -46,7 +46,7 @@ Then, in any repository:
   reports the components that fail together, which the map cannot show at rest
 
 **`derive`** — runs the ten steps forward from a described problem, refusing to
-name any technology until the demand arithmetic binds. Produces the artifacts in
+justify a technology without constraints and arithmetic; discovery can iterate. Produces the artifacts in
 order: client classes with their tolerances and the degraded outcomes they
 accept, data classes, the labelled graph with its sizing, the proof that each
 promised rung is reachable, the operations plan, the trace.

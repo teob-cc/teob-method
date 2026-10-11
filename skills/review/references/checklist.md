@@ -4,11 +4,11 @@
 
 **Surface** — Is authn/authz stated, and at which hop? Is there a request contract with a versioning policy? Is there a quota and rate limit per client class, and is it policy rather than capacity? Which invariants are enforced here rather than merely checked? What happens on partial results — is there a documented behaviour, or does it silently truncate? Are writes idempotent? Where the server pushes — webhooks, sockets — how is it signed, redelivered and ordered?
 
-**Channel** — Sync or async, and if sync, is the acknowledgement commit-bearing — does the caller's own promise depend on it? Which delivery guarantee? What is the ordering key, and is ordering scoped to it? Is backpressure stated — including on synchronous edges, where the connection pool is the queue and is usually shared across client classes? **Who owns the payload schema, and what is the compatibility mode?** Is TTL stated, and is it TTL on the message rather than retention on a store? **Who is on the far side, how does this end learn it, and what is the staleness bound of that knowledge?** **What happens to work in flight when an end leaves** — once for the planned departure, once for the other kind?
+**Channel** — Sync or async, and if sync, is the acknowledgement commit-bearing — does the caller's own promise depend on it? Which delivery guarantee? What is the ordering key, and is ordering scoped to it? Is backpressure stated — including on synchronous edges, where active connections and waiting requests need separate bounds and per-class admission? **Who owns the payload schema, and what is the compatibility mode?** Is TTL stated, and is it TTL on the message rather than retention on a store? **Who is on the far side, how does this end learn it, and what is the staleness bound of that knowledge?** **What happens to work in flight when an end leaves** — once for the planned departure, once for the other kind?
 
 **Processor** — Request-time, stateful stream, batch or model? How large is its state, and how long does it take to recover? Is it idempotent under replay? What is the keying, and what happens to late or out-of-order input? How is its output rebuilt from scratch, and how long does that take? If it combines partial results, how do they compose — and is that composition correct? If it approximates, what is the error bound, and who agreed to it — and where overshoot and undershoot have different prices, is the bound stated per side, with the error put on the cheaper side? If it reconciles a bounded invariant, what is its time to close?
 
-**Store** — Is this the truth of something, or derived from something? If derived: what is the staleness bound, and is it stated in units of time? How durable is it, and how is it replicated — and if more than one process plays it, are its replication and membership channels answered (synchronous or not, what a lagging replica can still catch up on, what a rolling upgrade speaks), do they actually support the consistency it claims, and is there a rule keeping its members out of one failure domain? Which consistency does it offer — and is what each reader takes off that menu recorded on the reader's channel, and no stronger than the tolerance needs? Which isolation does it run at by default, and does each invariant it enforces get the isolation its scope needs — a conditional write for one key, serializable for several? What enforcement rung does each invariant sit on? What is the access pattern, and does the store family match it? What is the retention, and who decided it? What are its size, growth and hot-key profile — and has the hottest key's rate been divided by what one key can serialise? Is the partition key the scope key of the invariant hardest to move? Is there a resharding path?
+**Store** — Is this the truth of something, or derived from something? If derived: what is the staleness bound, and is it stated in units of time? How durable is it, and how is it replicated — and if more than one process plays it, are its replication and membership channels answered (synchronous or not, what a lagging replica can still catch up on, what a rolling upgrade speaks), do they actually support the consistency it claims, and is there a rule keeping its members out of one failure domain? Which consistency does it offer — and is what each reader takes off that menu recorded on the reader's channel, and no stronger than the tolerance needs? Which isolation does it run at by default, and does each invariant it enforces get the isolation its scope needs — an atomic one-key check-and-change, or serializable transactions or a proved locking/constraint protocol for several? What enforcement rung does each invariant sit on? What is the access pattern, and does the store family match it? What is the retention, and who decided it? What are its size, growth and hot-key profile — and has the hottest key's rate been divided by what one key can serialise? Is the partition key the scope key of the invariant hardest to move? Is there a resharding path?
 
 ## Supply question set
 
@@ -18,6 +18,19 @@ The four above are about the system. This one is about the organisation that has
 
 ## Anti-patterns to look for
 
+Check these protocol obligations before accepting a mechanism label:
+
+- Inventory all irreducible inputs and their lineage before declaring anything rebuildable. Authority is independent of consistency: ownership, follows, policy and operation state can be truth without strict writes. View freshness, acknowledgement semantics and invariants determine coordination. A linearizable read does not reserve a resource; bind the promise to an atomic hold or conditional commit.
+- Effectively-once effects require a defined operation key and an atomic effect, deduplication record and saved result, or a naturally idempotent conditional effect. Specify key scope, payload mismatch, concurrent retries, retention and replay after expiry. External effects need a downstream idempotency contract or reconciliation.
+- A timeout can leave the result unknown even when the operation is idempotent. Separate the operation’s durable state from the caller’s knowledge; expose a stable handle, status or reconciliation path, retry limits and an escalation deadline. Do not report refusal unless non-acceptance is known.
+- A freshness promise needs a completeness watermark or equivalent evidence, an age check on the serving path, and a defined refusal, fallback or signed degraded bound when it cannot be met. An as-of marker and an alarm alone do not enforce the bound.
+- Authentication does not replace authorisation: state operation, object and tenant permissions even at a shallow boundary. Erasure inventories plaintext projections, caches, logs, exports, backups, replicas and key copies, with a deadline and verification per class. Crypto-erasure covers only ciphertext whose every usable key is destroyed; replay and restore must not resurrect erased data.
+- Escrow is valid only for decomposable invariants with conserved rights, atomic local spending, fenced ownership and safe transfer/reclamation after failure. Rate × lag bounds require hard admission and lag limits, burst and in-flight allowances, and a defined response when those limits fail. Average rate and a lag alarm are not a hard bound; a saga alone is not E3.
+- A trace row records the requirement, mechanism, assumptions, argument, evidence and status (declared / argued / tested / violated). A planned test is not a passing test; a zero violation counter is not a correctness proof. Count shared citations to prompt failure-mode analysis, then rank risk by consequence, exposure, uncertainty and reversibility, not the count alone.
+- Retained schema compatibility covers every version that may replay, including old binaries after rollback. Adjacent-version checks alone are insufficient.
+- Process co-location is not atomicity; bound active requests and waiting requests separately.
+
+
 | Pattern | What it looks like |
 |---|---|
 | **Reference architecture in disguise** | Technologies appear before any number. The requirements section reads as justification written afterwards |
@@ -25,7 +38,7 @@ The four above are about the system. This one is about the organisation that has
 | **The database drawn as one arrow** | One store, many readers, one unannotated edge. The nightly report and the checkout page take different consistency off the same menu and nothing says so |
 | **A topology true only between deployments** | No edge says who is on its far side or what happens when an end leaves. The design assumes nothing scales in, is replaced or is preempted |
 | **Synchrony mistaken for reliability** | Every write goes to the strict store because "it must be reliable" |
-| **Exactly-once as a product claim** | An unqualified "exactly-once", naming a broker rather than the three places it is earned: an at-least-once producer channel, a store that retains long enough to redeliver, a consumer channel with a stable deduplication key |
+| **Exactly-once as a product claim** | A broker label or stable key without atomic effects, saved results, retention and replay semantics |
 | **The dual write** | Two stores that must agree, written independently in one request handler — no outbox, no change capture |
 | **Capacity before demand** | Node counts and coordination protocols exist before requests/second was ever derived |
 | **Metrics of convenience** | Dashboards of what was easy to emit; nothing traces to a promise made to a client |
@@ -81,9 +94,9 @@ Rank findings by cost, not by how easy they were to spot:
 Delivery is the one adjacent area whose decisions all get made by default, so the review is the first time any of them is proposed. Run the same test as on any component.
 
 **Repo topology**
-- Is there a caller this team's commit cannot reach? Name it. If none, every repository past the first is uncited.
+- Repository topology and consumer compatibility are separate decisions. A published SDK can live in a monorepo. Repo splits cite access, tooling, ownership or release constraints. Own mobile apps, rolling deployments, persisted data and queued messages can retain old versions; declare their compatibility windows even when every source file shares a commit.
 - Which way may dependencies point, and is it enforced? An upstream importing from a downstream is the same defect whatever the layout.
-- Was the repo split derived from the org chart? Team boundaries buy runtime units; they buy a repository only when two teams cannot land one commit together.
+- Does each repo split name an access, tooling, ownership or release constraint?
 
 **Versioning**
 - Who can decline an upgrade? If nobody, the version is identity and the scheme is decoration.
@@ -107,7 +120,7 @@ Delivery is the one adjacent area whose decisions all get made by default, so th
 - When was the rollback last rehearsed? A date, or it is an assumption.
 
 **Reconciliation / GitOps**
-- Is there drift to detect at all? If nothing but the pipeline can write, the reconciler is uncited.
+- Can partial deployment, resource loss or runtime failure diverge from desired state even with a single writer? State the detection and repair contract.
 - Desired-state store: is it treated as truth, with its own restore path?
 - Pull channel: all eight — sync or async, guarantee, ordering key, backpressure, message TTL, schema and compatibility mode, far side, departure — and its owner.
 - Commit-to-live staleness bound: stated, or only observed afterwards?
