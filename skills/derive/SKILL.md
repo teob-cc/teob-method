@@ -63,9 +63,9 @@ The order is the whole trick.
 
 Doing capacity first is how a design ends up with a coordination protocol between 128 hosts that the arithmetic never required.
 
-**Do the division in both directions.** Compute what one node can serve before deciding you need many. Most systems fit on fewer nodes than the shape suggests, and the extra nodes are then justified by failover — which is a *stated reason*, not a silent one.
+**Do the division in three directions — per node, per cluster, per key.** Compute what one node can serve before deciding you need many. Most systems fit on fewer nodes than the shape suggests, and the extra nodes are then justified by failover — which is a *stated reason*, not a silent one. Per key: **the hottest key's peak rate** ÷ what one key can serialise, about 1 ÷ its commit latency (5 ms ≈ 200/s, assumed until measured). Near or above 1, no node count serialises that key — one key lives on one node — and the ratio decides the enforcement rung before any store is named.
 
-**Divide at the moment you choose, not in review.** Citing a constraint is not enough. Record what the constraint demands, what the mechanism supplies, and the ratio between them — supplied over demanded, with the demand taken at its average. Near 1 is sized to the job. In the tens is headroom, and you must name the factor — growth, peak, or failover. In the hundreds means the citation is decorative and the shape came from a reference architecture; the mechanism is not wrong so much as unjustified at that size. The ratio costs one line at the moment of choice, and a re-derivation to recover afterwards.
+**Divide at the moment you choose, not in review.** Citing a constraint is not enough. Record what the constraint demands, what the mechanism supplies, and the ratio between them — supplied over demanded, with the demand taken at its average. Near 1 is sized to the job. In the tens is headroom, and you must name the factor — growth, peak, or failover. In the hundreds means the citation is decorative and the shape came from a reference architecture; the mechanism is not wrong so much as unjustified at that size. The ratio costs one line at the moment of choice, and a re-derivation to recover afterwards. The fourth field is **what the mechanism introduces** — a cache, a stale window; a conditional write, a per-key ceiling; two sources of truth, a reconciliation. Each introduced item is cited by the mechanism that answers it, carried onto the degradation ladder or the risk register, or accepted in writing.
 
 ## Acknowledgements scope the expensive store
 
@@ -79,9 +79,28 @@ Ask of every write: **if this call returned "probably", would the next screen be
 
 Only the writes that genuinely need reservation or completion belong in the strict store; a receipt costs one durable append. Truth covers exactly what the acknowledgements and the invariants require — everything else is a projection with a stated staleness bound. **Reliability is durability; synchrony is a UX decision** — conflating them drags every write into the expensive store, and with it every scaling problem that store has.
 
+## Invariants have their own ladder
+
+**The scope sets the isolation.** One key → a conditional write. Several keys in one partition → serializable; snapshot isolation is not enough (write skew), and record the store's default. Across partitions → move the key, or a saga, which makes the invariant E3 for the saga's length. The partition key is the scope key of the invariant hardest to move.
+
+**The enforcement ladder** — how strictly an invariant holds under concurrent writers; not **the degradation ladder**, which is what a client is handed.
+
+| Rung | How | Violation | Price |
+|---|---|---|---|
+| **E1 Serialised** | One serialisation point checks every change | None | Contention: the per-key ceiling |
+| **E2 Escrowed** | Writers spend local slices of the quantity, refilled from the serialisation point | None | Slack stranded in slices: undershoot |
+| **E3 Bounded** | Writers check a lagging view; a reconciler compensates afterwards | At most rate × lag, as a number | The overshoot, priced, plus the reconciler |
+| **E4 Detected** | No check on the path; an audit finds and compensates | Unbounded until the audit | Every violation, priced |
+
+Take the cheapest rung whose worst-case violation, priced per unit, the signatories accept. A violation that would be *wrong* — a seat sold twice, a balance below zero — allows E1 or E2 only; E2 is the escape for a key too hot for E1. At E3 there are two promises, one enforcer each: the bound on the path, the exact figure in the reconciler (a processor at 06). At E4 the path checks nothing and the audit is the only enforcer.
+
 ## Provenance — non-negotiable
 
 Every figure carries a label: **measured** · **contractual** · **assumed**. Every assumed figure becomes a risk-register entry naming the decision it supports.
+
+**Price both ways.** Beside every cost line, a **loss line**: what one unit of violation costs the business, labelled like any figure. Where overshoot and undershoot have different prices, an approximation states its bound per side and puts the error on the cheaper one.
+
+**Declare the cost to reverse.** From step 04 on, every decision is **one-way** (a partition key, a stored or published format, a published interface, an erasure) or **two-way** (a store behind a module seam, a cache). Before a one-way decision on an assumed figure, buy the measurement — a probe priced against the cost of reversing; a two-way one proceeds and records its re-run trigger.
 
 **A mechanism may cite a decision instead of a constraint — then name the decision, and justify *that*.** Nothing partitions itself: a partitioned store was bought by a volume that did not fit one machine, a leader with elections by clients who tolerate no maintenance window. Write the parent down at the moment you take the child, because the chain is checked to its root later either way, and reconstructing it afterwards is the expensive version.
 
@@ -124,7 +143,7 @@ Produce the artifacts in order, each small enough to fit on a screen. Close with
 | Requirement (testable) | Mechanism | Verified by |
 |---|---|---|
 
-Then check it three ways: uncited mechanism → take the first disposition that applies — delete it · surface the missing requirement it traces to (the common case) · declare it self-derived, naming the parent decision, which then faces the same test — and where the system is already running it is Chesterton's fence, reported as *no recorded reason — confirm before removing*; unmapped requirement → design for it; **the same mechanism named by more than one requirement → a coupling finding**, recorded rather than fixed, carried onto the ladder as one entry per promise, and used to rank the risk register.
+Then check it three ways: uncited mechanism → take the first disposition that applies — delete it · surface the missing requirement it traces to (the common case) · declare it self-derived, naming the parent decision, which then faces the same test — and where the system is already running it is Chesterton's fence, reported as *no recorded reason — confirm before removing*; unmapped requirement → design for it; **the same mechanism named by more than one requirement → a coupling finding**, recorded rather than fixed, carried onto the ladder as one entry per promise, and used to rank the risk register — first the entries whose figure is assumed, whose decision is one-way and whose mechanism's coupling count is above one.
 
 ## Rules
 

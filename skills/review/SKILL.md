@@ -35,7 +35,7 @@ Diagrams are the usual casualty — raster images with no extractable text, a ph
 Find, or reconstruct, what is outside the system boundary. Two kinds, both required:
 
 - **Demand** — who calls this, at what volume, with what tolerances — five: latency as a percentile, ordering scoped to a key, durability and accuracy per class, and freshness per view, in units of time. Adversaries are clients too. Your own dependencies are client relationships reversed.
-- **Supply** — the organisation that has to run and pay for it: team capability and on-call reality, hosting posture, contracts already held, cost envelope, team topology, lifecycle, consumers you cannot rebuild for, compliance and procurement reality, and the compute source where a model is in the graph.
+- **Supply** — the organisation that has to run and pay for it: team capability and on-call reality, hosting posture, contracts already held, cost envelope with its loss lines (what one unit of violation costs the business), team topology, lifecycle, consumers you cannot rebuild for, compliance and procurement reality, and the compute source where a model is in the graph.
 
 If the artifact under review never states these, **that is the first finding** and it usually explains most of the others. Say so plainly rather than inventing them.
 
@@ -72,6 +72,8 @@ For each component: *which constraint's removal would delete this?*
 - **No answer exists** → uncited mechanism.
 
 **A mechanism may have two citations, and the second is usually the unwritten one.** Ask of every cited mechanism: *what else is now relying on this?* A time-to-live that bounds a resource commitment is also bounding the exposure window of a leaked credential; a queue that smooths load is also the retry buffer. Record both. A mechanism cited by supply and silently load-bearing for a promise nobody wrote down is one well-meaning optimisation away from breaking that promise, and the optimiser will have read only the first citation.
+
+**Ask the reverse too: what did this mechanism introduce?** A cache brings a stale window and a stampede on expiry, a conditional write a per-key ceiling, hedging extra load, two sources of truth a reconciliation. Each introduced item should be answered by a mechanism that cites it, carried onto the degradation ladder or the risk register, or accepted in writing. One that nothing records is a finding, and it is usually why some later mechanism has a citation nobody can see.
 
 **Decide the posture before you run the test.** It changes what an uncited mechanism means, never whether you report it.
 
@@ -113,6 +115,8 @@ A requirement of 10 000 IDs/s against a design capacity of 4.19 billion IDs/s is
 
 If the division cannot be done because the mechanism's capacity is nowhere stated, **that is the finding.** A mechanism nobody sized cannot be shown to be the right size.
 
+**Divide per key as well as per node.** For every hot key and every invariant's scope unit: the hottest unit's peak rate ÷ what one key can serialise, about 1 ÷ the commit latency of its conditional write. Near or above 1 means serialising that key cannot hold whatever the node count; a design that adds nodes for it has divided the wrong way. **A guarantee is a mechanism too, and divides against its tolerance**: a consistency class bought above what the tolerance needs — causal bought only to get read-your-writes and monotonic reads — is disproportion; an isolation level below what an invariant's scope needs is a correctness finding (below, step 8).
+
 ### 5 · Build the traceability map
 
 | Requirement (testable) | Mechanism | Verified by |
@@ -142,13 +146,13 @@ State — recorded beside the provenance:
 
 The labels say where a figure came from; the states say whether anything divides by it, and whether it was ever supplied. They are different axes: a figure carries one provenance label and may carry a state beside it — *measured, unconsumed* and *assumed, unconsumed* are both real entries.
 
-Every **assumed** figure becomes a risk-register entry with the decision it supports. This is the single most useful thing this skill produces, because assumed figures are load-bearing far more often than anyone admits.
+Every **assumed** figure becomes a risk-register entry with the decision it supports. This is the single most useful thing this skill produces, because assumed figures are load-bearing far more often than anyone admits. **Rank the register by three readings together**: the figure is assumed, a **one-way** decision rests on it (a partition key, a stored or published format, a published interface, an erasure), and its mechanism's coupling count is above one. A one-way decision on an assumed figure with no probe recorded is a finding of its own.
 
 **Unconsumed is the state most reviews miss**, because a labelled figure looks like diligence. A scale figure elicited in the first five minutes and then divided by nothing is a question that should not have been asked, and the design is resting on whatever was reached for instead.
 
 **The same labels apply to the non-numeric inputs.** A root, a requirement and a tolerance each came from somewhere, and *"the reviewer inferred it"* is a provenance, not a fact. Mark an inferred requirement **assumed** in the row that rests on it, not only in the Scope paragraph — a hedge in Scope does not travel with the finding, and a finding that reads as a result will be actioned as one.
 
-**Never invent a number to fill a gap.** A missing figure is a finding and now has a row. If arithmetic requires an input that does not exist, state the input, mark it **missing**, show the sensitivity, and continue — a retention promise of *forever* with no message rate behind it spans two orders of magnitude across plausible rates, and that span is the finding. Propose no value: a derivation may assume one; a review leaves the assuming to whoever owns the design.
+**Never invent a number to fill a gap.** A missing figure is a finding and now has a row. If arithmetic requires an input that does not exist, state the input, mark it **missing**, show the sensitivity, and continue — a retention promise of *forever* with no message rate behind it spans two orders of magnitude across plausible rates, and that span is the finding. Propose no value: a derivation may assume one; a review leaves the assuming to whoever owns the design. **The same holds for a price or a bound** — a loss line, a per-key ceiling, an error bound per side, an enforcement rung's worst case: absent, it is **missing**, never estimated for the author.
 
 ### 7 · Check the arithmetic — the quantity first, then the sum
 
@@ -156,6 +160,8 @@ Two passes, and the order is the whole trick:
 
 1. **Demand arithmetic, before any technology is named** — peak request rate per client class from stated volumes, data volume and growth, working-set size, and the cost envelope it has to fit. Round out loud: a day is ~10⁵ seconds.
 2. **Capacity arithmetic, after the store is chosen** — amplification, node counts, replica counts, headroom.
+
+Where a request fans out to N parallel calls, check the tail: it misses the leaf percentile p with probability 1 − pᴺ — at p99, about 63% for N = 100 — so each leaf needs about p99.99. Hedging after about the p95 costs about 5% more load, not double; a design that costs it as double, or not at all, has not done the arithmetic.
 
 A design that names a technology before pass 1 has decided by reference architecture. Compute pass 1 yourself and compare: *"the assertion is N nodes; the division gives 3."* Assertions and derivations disagree, and only one of them can be checked.
 
@@ -176,6 +182,7 @@ For each — the promise, the mechanism carrying it, that mechanism's failure mo
 - **A percentile attached to a zero-tolerance promise is already a finding.** "99.9% of opt-outs honoured" is a commitment to violate consent a thousand times per million.
 - **A single unguarded mechanism.** One filter, one flag check, one callback. Ask what happens when it is down, skipped, or raced. A consent check that runs *before* a queue and never again does not survive an opt-out during the retry window; a status flipped by a callback that never arrives stays pending forever.
 - **No counter.** A promise whose count must be zero and which nothing counts is unfalsifiable in production. That is a specific observability finding with a named owner, not a general plea for more metrics. **The Counter column is never left blank** — write *"none — finding"*, because an empty cell reads as unchecked and a stated absence reads as a result.
+- **The enforcement rung is unstated, or too low.** Every invariant says how strictly it holds under concurrent writers — E1 serialised, E2 escrowed, E3 bounded, E4 detected (the enforcement ladder, not the degradation ladder). A zero-tolerance invariant on E3 or E4 is a correctness finding. So is one spanning several keys enforced under snapshot isolation, which permits write skew, or under a default isolation nobody recorded. At E3, ask for the reconciler that enforces the exact figure, and its time to close; at E4, for the audit and how often it runs.
 - **A metric that measures the mechanism working is not a counter for the promise.** These are easy to mistake for each other and the substitution is common. A reservation system that promises never to double-book, and monitors *rejected booking attempts*, is measuring lock contention — evidence the enforcer is doing its job — and counting double-bookings nowhere. Ask of every candidate metric: if this promise were violated right now, would this number move?
 
 ### 9 · Check the adjacent areas
@@ -249,7 +256,7 @@ and which findings would change if a figure contradicted the prose.
 | Promise | Carrying mechanism | Failure mode | Counter that proves it |
 
 ## Supply
-| Team capability | Hosting posture | Contracts held | Cost envelope | Team topology | Lifecycle | Consumers you cannot rebuild for | Compliance and procurement | Compute source |
+| Team capability | Hosting posture | Contracts held | Cost envelope and loss lines | Team topology | Lifecycle | Consumers you cannot rebuild for | Compliance and procurement | Compute source |
 
 ## Provenance
 | Figure | Value | Provenance | State | Supports | Risk if wrong |
