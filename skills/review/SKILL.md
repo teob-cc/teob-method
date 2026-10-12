@@ -61,6 +61,8 @@ Decomposition is where most findings appear:
 
 Flag any component whose declared properties are missing. An async channel with no stated schema owner has **published an API by accident** and promised nothing about it.
 
+Check the names against the contracts as well as typing the roles. Record conflicting usages, scope collisions or a result name that promises more than its observable condition, with the affected surface and consequence. Leave an unrecorded meaning unresolved; do not infer a guarantee from a name. Follow the [naming checks](references/checklist.md#names-and-meaning), adapted from ANSI/NISO Z39.19-2005 (R2010). Style preferences alone are not correctness findings.
+
 ### 3 · Run the deletion test
 
 For each component: *what promises become unsupported if this is removed, including recovery, redundancy and shared obligations?* A shared component need not disappear when one requirement is removed.

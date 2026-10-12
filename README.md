@@ -51,6 +51,19 @@ order: client classes with their tolerances and the degraded outcomes they
 accept, data classes, the labelled graph with its sizing, the proof that each
 promised rung is reachable, the operations plan, the trace.
 
+Both skills carry domain meanings from the client's language into APIs, schemas,
+component roles and observations. `derive` records preferred terms, scope, aliases,
+nearby distinctions and sources where ambiguity matters; `review` reports concrete
+collisions and name/contract mismatches with their consequences. Names do not prove
+guarantees, and style preferences alone are not correctness findings.
+
+The [naming discipline](https://teob.cc/method/method.html#naming) adapts
+[ANSI/NISO Z39.19-2005 (R2010)](https://www.niso.org/publications/ansiniso-z3919-2005-r2010),
+*Guidelines for the Construction, Format, and Management of Monolingual Controlled
+Vocabularies*. The references in each skill
+retain the section citations and explain the boundary: retrieval aliases must not
+erase behavioural distinctions in executable contracts.
+
 ## Three rules they will not bend
 
 **No invented numbers.** A missing figure is reported as a finding, never filled

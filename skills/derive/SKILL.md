@@ -32,6 +32,10 @@ A database decomposes the same way, and almost nobody draws it that way: a store
 
 A **store is a role with constraints**. "Postgres" is not a design decision until you have written what the store must hold, survive and serve.
 
+## Name the concepts and contracts
+
+At 01, capture terms whose meaning affects a promise: preferred term, scope and meaning, aliases, nearby distinctions and source. Carry those meanings through data at 03, APIs and component roles at 04, compatibility at 09 and trace at 10. Keep contexts explicit; a shared spelling does not establish shared meaning. Names never prove a guarantee. The [naming procedure](references/ten-steps.md#names-and-meaning) retains its ANSI/NISO source; apply it without requiring a global glossary or cosmetic renames.
+
 ## The ten steps
 
 Detailed procedure per step: `references/ten-steps.md`. Load it when you begin step 01 and keep it open.

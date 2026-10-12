@@ -10,6 +10,29 @@
 
 **Store** — Is this the truth of something, or derived from something? If derived: what is the staleness bound, and is it stated in units of time? How durable is it, and how is it replicated — and if more than one process plays it, are its replication and membership channels answered (synchronous or not, what a lagging replica can still catch up on, what a rolling upgrade speaks), do they actually support the consistency it claims, and is there a rule keeping its members out of one failure domain? Which consistency does it offer — and is what each reader takes off that menu recorded on the reader's channel, and no stronger than the tolerance needs? Which isolation does it run at by default, and does each invariant it enforces get the isolation its scope needs — an atomic one-key check-and-change, or serializable transactions or a proved locking/constraint protocol for several? What enforcement rung does each invariant sit on? What is the access pattern, and does the store family match it? What is the retention, and who decided it? What are its size, growth and hot-key profile — and has the hottest key's rate been divided by what one key can serialise? Is the partition key the scope key of the invariant hardest to move? Is there a resharding path?
 
+## Names and meaning
+
+Check the vocabulary where a distinction affects a promise, using the artifact's contracts and actual usage as evidence. A missing global glossary is not itself a defect; a local scope note or existing contract can resolve the meaning.
+
+| Check | Evidence to examine |
+|---|---|
+| Term source | Does the chosen term follow client, domain or organisational usage? Is a disputed or proposed term's source recorded? |
+| Context and aliases | Is one preferred term used for a concept within its declared scope? Are aliases documented, homonyms qualified where they meet, and meanings mapped when contexts exchange them? |
+| Scope and neighbouring concepts | Can the consumer distinguish a view from authority, request from fact, and receipt from reservation or completion? Are material inclusions and exclusions recorded? |
+| Result meaning | What observable condition supports `accepted`, `committed` or `completed`? Is an unknown result incorrectly reported as a durable pending or failed state? |
+| Mechanism identity in the trace | Are scoped aliases resolved to the actual mechanism before counting dependencies? Two names for one mechanism do not establish separate nodes or redundancy; a shared spelling does not establish a shared failure dependency. Check the mechanism and failure evidence. |
+| Component responsibility | Does the label identify the domain responsibility, with primitive role and implementation recorded separately? A name does not prove the guarantee or justify a new process. |
+| Term form | Do meaningful compounds and established abbreviations preserve the distinction for the intended consumers? A namespace may already disambiguate it; casing preferences alone are not defects. |
+| Relationship type | Are kind-of, part-of, instance-of and related-to distinguished? Does any inferred inheritance, substitutability or runtime split rest only on vocabulary structure? |
+| History and compatibility | For a published name or meaning change, are the old meaning, replacement, reason, date, owner, affected consumers and compatibility window recorded? Check retained messages, stored records, rollback binaries and observations as well as new clients. |
+| Consumer evidence | Have representative consumers actually selected operations and predicted results in realistic scenarios? Check participants, scenarios, date and disagreements; a proposed test or model opinion is not a completed consumer test. |
+
+**Retrieval equivalence is not behavioural equivalence.** Search may connect cancellation and refund; an API must preserve the difference when one stops an obligation and the other returns money. Near-synonyms and broader/narrower concepts cannot become executable aliases if their preconditions, effects or guarantees differ. Documentation aliases do not supply runtime compatibility.
+
+Report a naming finding with the cited usages or contract clause, declared scope, ambiguity or mismatch, affected consumer and consequence. If the meaning is unrecorded, report the unresolved obligation and who can settle it; do not supply the missing definition. Rank by the demonstrated consequence. A misleading completion result that triggers an unsafe next action can be a correctness finding; a preferred spelling alone cannot. Do not demand cosmetic renames or a full ontology. An absence of consumer testing is an evidence gap, not proof that a name is misunderstood.
+
+**Source and adaptation.** [ANSI/NISO Z39.19-2005 (R2010)](https://www.niso.org/publications/ansiniso-z3919-2005-r2010), *Guidelines for the Construction, Format, and Management of Monolingual Controlled Vocabularies*: usage (§§5.3.5, 6.6.1); ambiguity, scope and history (§§6.2.1–6.2.3); term form and abbreviations (§§6.3.1, 6.6.3); compounds (§§7.4–7.5, 7.8); equivalence and relationship types (§§8.2–8.4); evaluation and maintenance (§§11.2–11.3). The standard addresses indexing and retrieval. These checks adapt it to executable contracts; near-synonym and generic-posting equivalence (§§8.2.3–8.2.4) cannot erase behavioural distinctions. This is not a claim of API compliance with the standard. Method reference: <https://teob.cc/method/method.html#naming>.
+
 ## Supply question set
 
 The four above are about the system. This one is about the organisation that has to run it, and it is the half most design documents omit entirely.
