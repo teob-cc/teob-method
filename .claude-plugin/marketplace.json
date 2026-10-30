@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "teob-method",
-  "description": "The Outside-In Method — derive a system from what is outside it, or audit one that already exists",
+  "description": "The Outside-In Method — derive a system from what is outside it, or audit one that already exists. The skills now live in teob-cc/method; this marketplace keeps existing installs pointed at them",
   "owner": {
     "name": "Lambda House",
     "email": "root@lambdahouse.cc"
@@ -10,7 +10,12 @@
     {
       "name": "outside-in",
       "description": "Four primitives, ten steps, two arithmetic passes, one traceability rule — applied to any system you point it at",
-      "source": "./"
+      "source": {
+        "source": "git-subdir",
+        "url": "teob-cc/method",
+        "path": "plugins/outside-in",
+        "ref": "main"
+      }
     }
   ]
 }

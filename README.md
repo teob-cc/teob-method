@@ -1,95 +1,20 @@
-# The Outside-In Method — agent skills
+# The Outside-In Method — agent skills (moved)
 
-Two skills that carry a system design method your agent can run against **a system
-you already have**, not a curated example.
+The `outside-in` plugin — the skills `derive` and `review` — now lives in **<https://github.com/teob-cc/method>**, the
+repository of the whole method: the specification, the book, the derivations and the skills, with the skills' step
+reference generated from the specification.
 
-Full method, worked example and eight derivations — the method indexed by what it
-does, each illustrated on selected systems: **<https://teob.cc/method>**
+**Existing installs keep working.** This marketplace stays registered and its `outside-in` entry points at the new
+repository, so `/plugin marketplace update teob-method` followed by `/plugin update outside-in@teob-method` brings
+the current version.
 
-## Install (Claude Code)
+**New installs** add the method's own marketplace:
 
 ```bash
-/plugin marketplace add teob-cc/teob-method
-/plugin install outside-in@teob-method
+/plugin marketplace add teob-cc/method
+/plugin install outside-in@method
 ```
 
-Then, in any repository:
+Then, in any repository: `/outside-in:review` audits what exists, `/outside-in:derive` derives what doesn't yet.
 
-```
-/outside-in:review     audit what exists
-/outside-in:derive     derive what doesn't yet
-```
-
-## What they do
-
-**`review`** — takes a running system, a design document or a diagram and:
-
-- recovers what is outside the boundary — clients, tolerances, the organisation
-  that pays for it
-- types every component into surface / channel / processor / store, decomposing
-  where one product plays several roles
-- runs the **deletion test**: what obligations would be unsupported if this were removed?
-- then does the division — is the cited requirement's magnitude anywhere near the
-  mechanism's? A component can be properly cited and still be four orders of
-  magnitude larger than anything asked for
-- builds the traceability map and reads it three ways — uncited mechanisms,
-  unmapped requirements, and mechanisms carrying more than one promise
-- enumerates the promises whose acceptable failure count is **zero**, and names
-  the mechanism carrying each, its failure mode and the audit that detects violations, with evidence status
-- labels every figure **measured**, **contractual** or **assumed**, and marks
-  its state — **unconsumed** for a number collected and never used, **missing**
-  for one the arithmetic needed and nobody supplied — and turns the assumed
-  ones into a risk register
-- re-derives the arithmetic independently and reports where it disagrees, and
-  where it agrees on the wrong quantity
-- where time permits, runs the stress pass on the artifact's own nouns and
-  reports the components that fail together, which the map cannot show at rest
-
-**`derive`** — runs the ten steps forward from a described problem, refusing to
-justify a technology without constraints and arithmetic; discovery can iterate. Produces the artifacts in
-order: client classes with their tolerances and the degraded outcomes they
-accept, data classes, the labelled graph with its sizing, the proof that each
-promised rung is reachable, the operations plan, the trace.
-
-Both skills carry domain meanings from the client's language into APIs, schemas,
-component roles and observations. `derive` records preferred terms, scope, aliases,
-nearby distinctions and sources where ambiguity matters; `review` reports concrete
-collisions and name/contract mismatches with their consequences. Names do not prove
-guarantees, and style preferences alone are not correctness findings.
-
-The [naming discipline](https://teob.cc/method/method.html#naming) adapts
-[ANSI/NISO Z39.19-2005 (R2010)](https://www.niso.org/publications/ansiniso-z3919-2005-r2010),
-*Guidelines for the Construction, Format, and Management of Monolingual Controlled
-Vocabularies*. The references in each skill
-retain the section citations and explain the boundary: retrieval aliases must not
-erase behavioural distinctions in executable contracts.
-
-## Three rules they will not bend
-
-**No invented numbers.** A missing figure is reported as a finding, never filled
-in from a reference architecture. If arithmetic needs an input that does not
-exist, the skill names it, shows the sensitivity and continues: `review` marks
-it missing and proposes nothing, `derive` proposes a value labelled assumed.
-
-**The verdict depends on what the artifact is.** In a design not yet built the
-deletion test is a razor. In a **running system** it is Chesterton's fence: an
-uncited mechanism is reported as *"no recorded reason — confirm before removing"*,
-never as an instruction to delete, and the recommendation is an incremental
-cutover. In a **worked example** whose purpose is to demonstrate the mechanism the
-test inverts — the finding becomes *"the stated requirement cannot discriminate
-this mechanism"*, and it lands against the requirement rather than the mechanism.
-
-**No ratio without the division.** "Oversized" is taste until somebody divides.
-The skill reports what the requirement demands, what the mechanism supplies, and
-the number between them — because taste arguments get settled by seniority and
-arithmetic does not.
-
-## Other agents
-
-The skills are plain markdown with YAML frontmatter — the same files work in
-Cursor, OpenCode, Windsurf and Copilot. Copy `skills/<name>/SKILL.md` (and its
-`references/`) into wherever that agent reads skills from.
-
-## Licence
-
-MIT.
+Full method, worked example and eight derivations: **<https://teob.cc/method>**. MIT, published by Lambda House.
